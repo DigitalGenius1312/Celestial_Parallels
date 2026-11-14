@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System Globe Switcher</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- UI Navigation Menu -->
+    <div id="menu">
+        <button class="planet-btn active" onclick="switchBody('earth', this)">Earth</button>
+        <button class="planet-btn" onclick="switchBody('mars', this)">Mars</button>
+        <button class="planet-btn" onclick="switchBody('moon', this)">Moon</button>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden">
+        <div class="spinner"></div>
+        <span id="loadingText">Loading Celestial Body...</span>
+    </div>
+
+    <div id="cesiumContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
