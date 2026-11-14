@@ -3,26 +3,109 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solar System Globe Switcher</title>
+    <title>Solar System Explorer</title>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- UI Navigation Menu -->
-    <div id="menu">
-        <button class="planet-btn active" onclick="switchBody('earth', this)">Earth</button>
-        <button class="planet-btn" onclick="switchBody('mars', this)">Mars</button>
-        <button class="planet-btn" onclick="switchBody('moon', this)">Moon</button>
-    </div>
+    <!-- Top Navigation Bar -->
+    <nav id="navbar">
+        <div class="nav-brand">Solar System Explorer</div>
+        <div class="nav-links">
+            <button class="nav-btn active" onclick="showSection('home', this)">Home</button>
+            <button class="nav-btn" onclick="showSection('howto', this)">How to Use</button>
+            <button class="nav-btn" onclick="showSection('about', this)">About</button>
+        </div>
+    </nav>
+
+    <!-- HOME SECTION (Active 3D Globe & Controls) -->
+    <main id="homeSection">
+        <!-- Planet Switcher -->
+        <div id="menu">
+            <button class="planet-btn active" onclick="switchBody('earth', this)">Earth</button>
+            <button class="planet-btn" onclick="switchBody('mars', this)">Mars</button>
+            <button class="planet-btn" onclick="switchBody('moon', this)">Moon</button>
+        </div>
+
+        <!-- Landmark Quick-Jumps -->
+        <div id="landmarksPanel">
+            <span class="panel-label">Fly to Landmark</span>
+            <div id="landmarkButtons"></div>
+        </div>
+
+        <!-- Planetary Info Card -->
+        <div id="infoCard">
+            <h2 id="bodyTitle">Earth</h2>
+            <p id="bodyDesc">Our home planet and the only known world with stable liquid water on its surface.</p>
+            <div class="stats-grid">
+                <div class="stat">
+                    <span class="stat-label">Radius</span>
+                    <span class="stat-val" id="bodyRadius">6,371 km</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Gravity</span>
+                    <span class="stat-val" id="bodyGravity">9.8 m/s²</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Day Length</span>
+                    <span class="stat-val" id="bodyDay">24 hrs</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3D Globe Container -->
+        <div id="cesiumContainer"></div>
+    </main>
+
+    <!-- HOW TO USE SECTION (Overlay) -->
+    <section id="howtoSection" class="page-overlay hidden">
+        <div class="overlay-card">
+            <h2>How to Use This Explorer</h2>
+            <div class="guide-grid">
+                <div class="guide-item">
+                    <h3>1. Switch Worlds</h3>
+                    <p>Use the top-left switcher to jump between <strong>Earth</strong>, <strong>Mars</strong>, and the <strong>Moon</strong>. Each body loads real 3D terrain and planetary proportions.</p>
+                </div>
+                <div class="guide-item">
+                    <h3>2. Navigate in 3D</h3>
+                    <ul>
+                        <li><strong>Rotate:</strong> Left-click and drag</li>
+                        <li><strong>Zoom:</strong> Scroll wheel up/down</li>
+                        <li><strong>Tilt / Orbit:</strong> Hold middle-click (or Ctrl + drag)</li>
+                    </ul>
+                </div>
+                <div class="guide-item">
+                    <h3>3. Fly to Landmarks</h3>
+                    <p>Click any location pill in the top-right panel to smoothly glide down from orbit directly to famous craters, mountains, and landing sites.</p>
+                </div>
+            </div>
+            <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Back to Globe</button>
+        </div>
+    </section>
+
+    <!-- ABOUT SECTION (Overlay) -->
+    <section id="aboutSection" class="page-overlay hidden">
+        <div class="overlay-card">
+            <h2>About Solar System Explorer</h2>
+            <p>This interactive 3D web application lets you explore planetary surfaces across our inner solar system directly in your browser without installing heavy software.</p>
+            <div class="tech-stack">
+                <h3>Powered By:</h3>
+                <ul>
+                    <li><strong>CesiumJS:</strong> Open-source 3D geospatial globe engine</li>
+                    <li><strong>Planetary Ellipsoids:</strong> Accurate WGS84 (Earth), Mars, and Lunar reference spheres</li>
+                    <li><strong>3D Tilesets:</strong> High-resolution elevation and imagery streamed via Cesium ion</li>
+                </ul>
+            </div>
+            <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Explore Now</button>
+        </div>
+    </section>
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="hidden">
         <div class="spinner"></div>
-        <span id="loadingText">Loading Celestial Body...</span>
+        <span id="loadingText">Initializing...</span>
     </div>
-
-    <div id="cesiumContainer"></div>
 
     <script src="app.js"></script>
 </body>
