@@ -81,42 +81,61 @@ function handleParamSubmit(event) {
 
 // Two-Step Pinpoint & Error Module Integration Logic
 async function processEarthLocation(name, lat, lon) {
-    // Normalize longitude based on pipeline utility
-    const normLon = ((lon + 180.0) % 360.0) - 180.0;
+    console.log(`[Frontend] Sending ${name} on ${currentBody.toUpperCase()} (${lat}, ${lon}) to Python engine...`);
 
-    // Algorithmic mapping derived from pipeline outputs (e.g. Valles Marineris benchmark)[cite: 4]
-    const derivedLat = parseFloat((lat * 1.48 + 15.2).toFixed(4));
-    const derivedLon = parseFloat((normLon * 0.75 - 12.5).toFixed(4));
-    const errorRadiusKm = 2.85;
+    try {
+        // 1. Send the user-submitted coordinates via POST to FastAPI
+        const response = await fetch('http://localhost:8000/api/pinpoint', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                body: currentBody, // Passes 'mars' or 'moon' dynamically
+                lat: lat,
+                lon: lon
+            })
+        });
 
-    console.log(`[Two-Step Pipeline] ${name} (${currentBody.toUpperCase()}) -> Pinpoint: (${derivedLat}, ${derivedLon}) | Error Radius: ±${errorRadiusKm} km`);
+        if (!response.ok) throw new Error("Failed to compute planetary analog location.");
 
-    // Switch viewer to Earth automatically
-    await switchBody('earth', document.querySelector('.planet-btn'));
+        // 2. Retrieve real computed results from Python
+        const data = await response.json();
+        const derivedLat = data.earth_lat;
+        const derivedLon = data.earth_lon;
+        const errorRadiusKm = data.error_km;
 
-    // Fly to calculated Earth coordinates
-    viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat, 600000),
-        duration: 2.5
-    });
+        console.log(`[Python Pipeline Success] Earth Pinpoint: (${derivedLat}, ${derivedLon}) | Error: ±${errorRadiusKm} km`);
 
-    // Clear any previous error circles
-    viewer.entities.values.forEach(entity => {
-        if (entity.ellipse) viewer.entities.remove(entity);
-    });
+        // 3. Switch viewer globe to Earth automatically
+        await switchBody('earth', document.querySelector('.planet-btn'));
 
-    // Draw error radius circle on Earth (converting radius from km to meters)
-    const radiusMeters = errorRadiusKm * 1000;
-    viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat),
-        ellipse: {
-            semiMajorAxis: radiusMeters,
-            semiMinorAxis: radiusMeters,
-            material: Cesium.Color.CYAN.withAlpha(0.35),
-            outline: true,
-            outlineColor: Cesium.Color.CYAN
-        }
-    });
+        // 4. Fly the Cesium camera to the calculated Earth coordinates
+        viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat, 600000),
+            duration: 2.5
+        });
+
+        // 5. Clear previous error boundary circles
+        viewer.entities.values.forEach(entity => {
+            if (entity.ellipse) viewer.entities.remove(entity);
+        });
+
+        // 6. Draw the precise pinpoint error radius circle on Earth
+        const radiusMeters = errorRadiusKm * 1000;
+        viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat),
+            ellipse: {
+                semiMajorAxis: radiusMeters,
+                semiMinorAxis: radiusMeters,
+                material: Cesium.Color.CYAN.withAlpha(0.35),
+                outline: true,
+                outlineColor: Cesium.Color.CYAN
+            }
+        });
+
+    } catch (error) {
+        console.error("Error communicating with Python API:", error);
+        alert("Could not reach the Python calculation engine. Make sure server.py is running!");
+    }
 }
 
 // --- PLANETARY DATA ---
