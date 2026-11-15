@@ -105,7 +105,7 @@ async function processEarthLocation(name, lat, lon) {
 
     try {
         // 1. Send coordinates via POST to FastAPI server
-        const response = await fetch('http://localhost:8000/api/pinpoint', {
+        const response = await fetch('/api/pinpoint', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
