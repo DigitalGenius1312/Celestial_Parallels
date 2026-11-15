@@ -1,6 +1,6 @@
-# server.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import time
 import numpy as np
@@ -125,9 +125,9 @@ def bilinear_interpolate_point(body_grid_df, lat, lon, feature_cols):
     v11 = get_vec(lat1, lon1)
 
     interp_vec = (v00 * (1 - wx) * (1 - wy) +
-                  v10 * wx * (1 - wy) +
-                  v01 * (1 - wx) * wy +
-                  v11 * wx * wy)
+                 v10 * wx * (1 - wy) +
+                 v01 * (1 - wx) * wy +
+                 v11 * wx * wy)
     
     grad_x = np.linalg.norm((v10 - v00 + v11 - v01) / 2.0)
     grad_y = np.linalg.norm((v01 - v00 + v11 - v10) / 2.0)
@@ -252,8 +252,8 @@ class LocationRequest(BaseModel):
     lat: float
     lon: float
 
-@app.get("/")
-def read_root():
+@app.get("/api/status")
+def read_status():
     return {
         "status": "Online",
         "message": "Planetary Analog Pipeline API is running!",
@@ -270,6 +270,9 @@ def calculate_pinpoint(req: LocationRequest):
         "error_km": float(best['pinpoint_error_km']),
         "S_score": float(best['S_refined'])
     }
+
+# Mount static files so index.html, styles.css, and app.js serve at root /
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
