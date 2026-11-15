@@ -87,9 +87,9 @@ No Python installation or terminal setup required:
 
 **Linux:** Celestial-Parallels-ubuntu-latest.zip
 
-1.  Extract the downloaded zip file into a local folder.
+2.  Extract the downloaded zip file into a local folder.
     
-2.  Double-click the launcher executable (Celestial-Parallels or Celestial-Parallels.exe) to start the local backend server and automatically launch the 3D interface in your default browser.
+3.  Double-click the launcher executable (Celestial-Parallels or Celestial-Parallels.exe) to start the local backend server and automatically launch the 3D interface in your default browser.
     
 
 ### Option B: Run from Source (For Developers)
