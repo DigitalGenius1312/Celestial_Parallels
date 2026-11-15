@@ -98,7 +98,6 @@ async function processEarthLocation(name, lat, lon) {
     let msgIndex = 0;
     loadingText.innerText = progressMessages[msgIndex];
 
-    // Cycle through messages smoothly every 750ms while processing
     const textInterval = setInterval(() => {
         msgIndex = (msgIndex + 1) % progressMessages.length;
         loadingText.innerText = progressMessages[msgIndex];
@@ -130,19 +129,22 @@ async function processEarthLocation(name, lat, lon) {
         // 3. Switch viewer globe to Earth automatically
         await switchBody('earth', document.querySelector('.planet-btn'));
 
-        // 4. Fly the Cesium camera to the calculated Earth coordinates
+        // 4. Calculate proper zoom altitude based on error radius (framing the error circle cleanly)
+        const radiusMeters = errorRadiusKm * 1000;
+        const cameraHeight = Math.max(radiusMeters * 10, 15000);
+
+        // 5. Fly the Cesium camera to the calculated Earth coordinates and zoom in appropriately
         viewer.camera.flyTo({
-            destination: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat, 600000),
+            destination: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat, cameraHeight),
             duration: 2.5
         });
 
-        // 5. Clear previous error boundary circles
+        // 6. Clear previous error boundary circles
         viewer.entities.values.forEach(entity => {
             if (entity.ellipse) viewer.entities.remove(entity);
         });
 
-        // 6. Draw the precise pinpoint error radius circle on Earth
-        const radiusMeters = errorRadiusKm * 1000;
+        // 7. Draw the precise pinpoint error radius circle on Earth
         viewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat),
             ellipse: {
@@ -170,12 +172,7 @@ const bodyData = {
         desc: "Our home planet and the only known world with stable liquid water on its surface.",
         radius: "6,371 km",
         gravity: "9.8 m/s²",
-        day: "24 hrs",
-        landmarks: [
-            { name: "Mount Everest", lon: 86.9250, lat: 27.9881, height: 15000 },
-            { name: "Grand Canyon", lon: -112.1129, lat: 36.1069, height: 25000 },
-            { name: "Giza Pyramids", lon: 31.1342, lat: 29.9792, height: 3000 }
-        ]
+        day: "24 hrs"
     },
     mars: {
         title: "Mars",
@@ -183,12 +180,7 @@ const bodyData = {
         radius: "3,389 km",
         gravity: "3.7 m/s²",
         day: "24h 37m",
-        assetId: 3644333,
-        landmarks: [
-            { name: "Olympus Mons", lon: -133.8, lat: 18.65, height: 250000 },
-            { name: "Valles Marineris", lon: -59.2, lat: -13.9, height: 300000 },
-            { name: "Jezero Crater", lon: 77.58, lat: 18.38, height: 50000 }
-        ]
+        assetId: 3644333
     },
     moon: {
         title: "The Moon",
@@ -196,12 +188,7 @@ const bodyData = {
         radius: "1,737 km",
         gravity: "1.6 m/s²",
         day: "29.5 days",
-        assetId: 2684829,
-        landmarks: [
-            { name: "Tycho Crater", lon: -11.36, lat: -43.31, height: 120000 },
-            { name: "Apollo 11 Site", lon: 23.47, lat: 0.67, height: 40000 },
-            { name: "Copernicus Crater", lon: -20.08, lat: 9.62, height: 150000 }
-        ]
+        assetId: 2684829
     }
 };
 
@@ -212,16 +199,6 @@ function updateUI(bodyType) {
     document.getElementById('bodyRadius').innerText = data.radius;
     document.getElementById('bodyGravity').innerText = data.gravity;
     document.getElementById('bodyDay').innerText = data.day;
-
-    const container = document.getElementById('landmarkButtons');
-    container.innerHTML = '';
-    data.landmarks.forEach(site => {
-        const btn = document.createElement('button');
-        btn.className = 'landmark-btn';
-        btn.innerText = site.name;
-        btn.onclick = () => flyToLocation(site.lon, site.lat, site.height);
-        container.appendChild(btn);
-    });
 }
 
 function flyToLocation(lon, lat, height) {
@@ -262,12 +239,16 @@ async function switchBody(bodyType, buttonElement) {
             viewer = new Cesium.Viewer('cesiumContainer', {
                 animation: false,
                 timeline: false,
-                baseLayerPicker: true,
+                baseLayerPicker: false,
                 geocoder: true,
                 homeButton: true,
                 sceneModePicker: false,
-                navigationHelpButton: false
+                navigationHelpButton: false,
+                globe: false
             });
+
+            const tileset = await Cesium.createGooglePhotorealistic3DTileset();
+            viewer.scene.primitives.add(tileset);
         } else {
             Cesium.Ellipsoid.default = bodyType === 'mars' ? Cesium.Ellipsoid.MARS : Cesium.Ellipsoid.MOON;
             

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cellestial Parallels</title>
+    <title>Celestial Parallels</title>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -12,8 +12,8 @@
     <!-- Top Navigation Bar -->
     <nav id="navbar">
         <div class="nav-brand">
-            <img src="logo.png" alt="Explorer Logo" class="nav-logo">
-            <span>Cellestial Parallels</span>
+            <img src="logo.png" alt="Celestial Parallels" class="nav-logo">
+            <span>Celestial Parallels</span>
         </div>
         <div class="nav-links">
             <button class="nav-btn active" onclick="showSection('home', this)">Home</button>
@@ -31,12 +31,6 @@
                 <button class="planet-btn active" onclick="switchBody('earth', this)">Earth</button>
                 <button class="planet-btn" onclick="switchBody('mars', this)">Mars</button>
                 <button class="planet-btn" onclick="switchBody('moon', this)">Moon</button>
-            </div>
-
-            <!-- Landmark Quick-Jumps -->
-            <div id="landmarksPanel">
-                <span class="panel-label">Fly to Landmark</span>
-                <div id="landmarkButtons"></div>
             </div>
         </div>
 
@@ -87,7 +81,7 @@
     <!-- HOW TO USE SECTION -->
     <section id="howtoSection" class="page-overlay hidden">
         <div class="overlay-card">
-            <h2>How to Use This Explorer</h2>
+            <h2>How to Use This Tool</h2>
             <div class="guide-grid">
                 <div class="guide-item">
                     <h3>1. Switch Worlds</h3>
@@ -95,11 +89,11 @@
                 </div>
                 <div class="guide-item">
                     <h3>2. Custom Locations</h3>
-                    <p>When viewing Mars or the Moon, use the right sidebar panel to input custom latitude, longitude, and location names.</p>
+                    <p>When viewing Mars or the Moon, use the right sidebar panel to input custom latitude, longitude, and location names. North and East values are positive whereas the South and West values are negative.</p>
                 </div>
                 <div class="guide-item">
                     <h3>3. Find Earth Matches</h3>
-                    <p>Run the algorithm on your saved custom locations to pinpoint equivalent coordinates and error radii on Earth.</p>
+                    <p>Run the algorithm on your saved custom locations to pinpoint analog coordinates and error radii on Earth.</p>
                 </div>
             </div>
             <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Back to Globe</button>
@@ -109,8 +103,8 @@
     <!-- ABOUT SECTION -->
     <section id="aboutSection" class="page-overlay hidden">
         <div class="overlay-card">
-            <h2>About Solar System Explorer</h2>
-            <p>This interactive web application lets you explore planetary surfaces and process geological coordinates across CSV datasets.</p>
+            <h2>About Celestial Parallels</h2>
+            <p>We developed a scientifically rigorous Earth analog site selection interactive map integrated with 3D CesiumJS/ion. Our model addresses the issue of there being no rigorous, efficient way to find earth analogs of lunar and martian surfaces. It uses widespread open source planetary data and enforces an area-weighted sub aerial land mask to exclude marine environments, This approach achieves sub-10 km spatial precision while filtering out water, urban, and high-vegetation anomalies. All the user needs to do is input their desired location, and our algorithm will display the closest earth analog based on various parameters such as topology, geology, water content, wind and so on and so forth. This allows for much more rapid location of suitable analogs, allows greater optimization of rover transport on the moon and mars, and it dramatically improves the experience and readiness of biological personnel for extraterrestrial conditions. Our project bridges heavy spatial data science with a 3D digital twin to accurately map Martian and lunar location to their true terrestrial equivalents.</p>
             <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Explore Now</button>
         </div>
     </section>
