@@ -3,7 +3,11 @@ name: Celestial Parallels
 on:
   push:
     branches: [ main, master ]
+    tags: [ 'v*' ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -31,8 +35,22 @@ jobs:
     - name: Build Executable with PyInstaller
       run: pyinstaller --noconsole --onedir --name "Celestial Parallels" --add-data "Master_Suitability_S.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C1.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C2.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C3.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C4.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C5.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "index.html${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "style.css${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "app.js${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "logo.png${{ matrix.os == 'windows-latest' && ';' || ':' }}." desktop_app.py
 
+    - name: Zip Build Folder (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: cd dist && zip -r ../Celestial-Parallels-${{ matrix.os }}.zip .
+
+    - name: Zip Build Folder (Windows)
+      if: runner.os == 'Windows'
+      run: Compress-Archive -Path dist\* -DestinationPath Celestial-Parallels-${{ matrix.os }}.zip
+
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: Celestial-Parallels-${{ matrix.os }}
         path: dist/
+
+    - name: Attach to GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: Celestial-Parallels-${{ matrix.os }}.zip
