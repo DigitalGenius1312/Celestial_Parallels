@@ -16,12 +16,12 @@ def get_resource_path(relative_path):
 print("--- INITIALIZING TWO-STAGE PINPOINT & ERROR MODULE PIPELINE ---")
 
 # 1. Load Datasets
-master = pd.read_csv('Master_Suitability_S.csv')
-c1 = pd.read_csv('C1.csv')
-c2 = pd.read_csv('C2.csv')
-c3 = pd.read_csv('C3.csv')
-c4 = pd.read_csv('C4.csv')
-c5 = pd.read_csv('C5.csv')
+master = pd.read_csv(get_resource_path('Master_Suitability_S.csv'))
+c1 = pd.read_csv(get_resource_path('C1.csv'))
+c2 = pd.read_csv(get_resource_path('C2.csv'))
+c3 = pd.read_csv(get_resource_path('C3.csv'))
+c4 = pd.read_csv(get_resource_path('C4.csv'))
+c5 = pd.read_csv(get_resource_path('C5.csv'))
 
 df_full = master.merge(c1, on=['body', 'lat', 'lon'], suffixes=('', '_c1'))
 for df_comp in [c2, c3, c4, c5]:
@@ -279,7 +279,7 @@ def calculate_pinpoint(req: LocationRequest):
     }
 
 # Mount static files so index.html, styles.css, and app.js serve at root /
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
+app.mount("/", StaticFiles(directory=get_resource_path("."), html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
