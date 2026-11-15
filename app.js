@@ -79,12 +79,33 @@ function handleParamSubmit(event) {
     document.getElementById('planetaryForm').reset();
 }
 
-// Two-Step Pinpoint & Error Module Integration Logic
+// Two-Step Pinpoint & Error Module Integration with Dynamic Progress Loading Screen
 async function processEarthLocation(name, lat, lon) {
-    console.log(`[Frontend] Sending ${name} on ${currentBody.toUpperCase()} (${lat}, ${lon}) to Python engine...`);
+    const overlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+    overlay.classList.remove('hidden');
+
+    // Dynamic progress messages sequence
+    const progressMessages = [
+        `Analyzing coordinates for ${name}...`,
+        "Finding the best locations...",
+        "Querying CSV feature groups & covariance matrices...",
+        "Executing two-stage pinpoint pipeline...",
+        "Filtering subaerial land and calculating error radius...",
+        "Finalizing Earth analog match..."
+    ];
+
+    let msgIndex = 0;
+    loadingText.innerText = progressMessages[msgIndex];
+
+    // Cycle through messages smoothly every 750ms while processing
+    const textInterval = setInterval(() => {
+        msgIndex = (msgIndex + 1) % progressMessages.length;
+        loadingText.innerText = progressMessages[msgIndex];
+    }, 750);
 
     try {
-        // 1. Send the user-submitted coordinates via POST to FastAPI
+        // 1. Send coordinates via POST to FastAPI server
         const response = await fetch('http://localhost:8000/api/pinpoint', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -97,13 +118,14 @@ async function processEarthLocation(name, lat, lon) {
 
         if (!response.ok) throw new Error("Failed to compute planetary analog location.");
 
-        // 2. Retrieve real computed results from Python
+        // 2. Retrieve computed results from Python
         const data = await response.json();
         const derivedLat = data.earth_lat;
         const derivedLon = data.earth_lon;
         const errorRadiusKm = data.error_km;
 
-        console.log(`[Python Pipeline Success] Earth Pinpoint: (${derivedLat}, ${derivedLon}) | Error: ±${errorRadiusKm} km`);
+        clearInterval(textInterval);
+        loadingText.innerText = "Switching viewport to Earth match...";
 
         // 3. Switch viewer globe to Earth automatically
         await switchBody('earth', document.querySelector('.planet-btn'));
@@ -135,6 +157,9 @@ async function processEarthLocation(name, lat, lon) {
     } catch (error) {
         console.error("Error communicating with Python API:", error);
         alert("Could not reach the Python calculation engine. Make sure server.py is running!");
+    } finally {
+        clearInterval(textInterval);
+        overlay.classList.add('hidden');
     }
 }
 
