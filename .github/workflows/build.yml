@@ -29,10 +29,10 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build Executable with PyInstaller
-      run: pyinstaller --noconsole --onedir --add-data "Master_Suitability_S.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C1.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C2.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C3.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C4.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C5.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "index.html${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "style.css${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "app.js${{ matrix.os == 'windows-latest' && ';' || ':' }}." desktop_app.py
+      run: pyinstaller --noconsole --onedir --name "Celestial Parallels" --add-data "Master_Suitability_S.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C1.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C2.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C3.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C4.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C5.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "index.html${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "style.css${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "app.js${{ matrix.os == 'windows-latest' && ';' || ':' }}." desktop_app.py
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Planetary-Explorer-${{ matrix.os }}
+        name: Celestial-Parallels-${{ matrix.os }}
         path: dist/
