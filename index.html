@@ -11,7 +11,10 @@
 <body>
     <!-- Top Navigation Bar -->
     <nav id="navbar">
-        <div class="nav-brand">Solar System Explorer</div>
+        <div class="nav-brand">
+            <img src="logo.png" alt="Explorer Logo" class="nav-logo">
+            <span>Solar System Explorer</span>
+        </div>
         <div class="nav-links">
             <button class="nav-btn active" onclick="showSection('home', this)">Home</button>
             <button class="nav-btn" onclick="showSection('howto', this)">How to Use</button>
@@ -21,17 +24,49 @@
 
     <!-- HOME SECTION (Active 3D Globe & Controls) -->
     <main id="homeSection">
-        <!-- Planet Switcher -->
-        <div id="menu">
-            <button class="planet-btn active" onclick="switchBody('earth', this)">Earth</button>
-            <button class="planet-btn" onclick="switchBody('mars', this)">Mars</button>
-            <button class="planet-btn" onclick="switchBody('moon', this)">Moon</button>
+        <!-- Top Controls Container -->
+        <div id="topControlsWrapper">
+            <!-- Planet Switcher -->
+            <div id="menu">
+                <button class="planet-btn active" onclick="switchBody('earth', this)">Earth</button>
+                <button class="planet-btn" onclick="switchBody('mars', this)">Mars</button>
+                <button class="planet-btn" onclick="switchBody('moon', this)">Moon</button>
+            </div>
+
+            <!-- Landmark Quick-Jumps -->
+            <div id="landmarksPanel">
+                <span class="panel-label">Fly to Landmark</span>
+                <div id="landmarkButtons"></div>
+            </div>
         </div>
 
-        <!-- Landmark Quick-Jumps -->
-        <div id="landmarksPanel">
-            <span class="panel-label">Fly to Landmark</span>
-            <div id="landmarkButtons"></div>
+        <!-- LOCATION INPUT PANEL (Right Sidebar, only visible for Mars & Moon) -->
+        <div id="parametersPanel" class="hidden">
+            <div class="panel-header">
+                <h3>Custom Locations</h3>
+                <button id="toggleParamsBtn" onclick="toggleParamsDrawer()">Expand Form</button>
+            </div>
+            <form id="planetaryForm" class="params-form collapsed" onsubmit="handleParamSubmit(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Location Name</label>
+                        <input type="text" id="locNameInput" placeholder="e.g. Base neo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Latitude</label>
+                        <input type="number" step="0.0001" id="locLatInput" placeholder="e.g. 18.64" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Longitude</label>
+                        <input type="number" step="0.0001" id="locLonInput" placeholder="e.g. 133.64" required>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="action-btn">Add Location</button>
+                </div>
+            </form>
+            <!-- Saved Location Blocks Container -->
+            <div id="savedLocationsList"></div>
         </div>
 
         <!-- Planetary Info Card -->
@@ -39,18 +74,9 @@
             <h2 id="bodyTitle">Earth</h2>
             <p id="bodyDesc">Our home planet and the only known world with stable liquid water on its surface.</p>
             <div class="stats-grid">
-                <div class="stat">
-                    <span class="stat-label">Radius</span>
-                    <span class="stat-val" id="bodyRadius">6,371 km</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Gravity</span>
-                    <span class="stat-val" id="bodyGravity">9.8 m/s²</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Day Length</span>
-                    <span class="stat-val" id="bodyDay">24 hrs</span>
-                </div>
+                <div class="stat"><span class="stat-label">Radius</span><span class="stat-val" id="bodyRadius">6,371 km</span></div>
+                <div class="stat"><span class="stat-label">Gravity</span><span class="stat-val" id="bodyGravity">9.8 m/s²</span></div>
+                <div class="stat"><span class="stat-label">Day Length</span><span class="stat-val" id="bodyDay">24 hrs</span></div>
             </div>
         </div>
 
@@ -58,53 +84,42 @@
         <div id="cesiumContainer"></div>
     </main>
 
-    <!-- HOW TO USE SECTION (Overlay) -->
+    <!-- HOW TO USE SECTION -->
     <section id="howtoSection" class="page-overlay hidden">
         <div class="overlay-card">
             <h2>How to Use This Explorer</h2>
             <div class="guide-grid">
                 <div class="guide-item">
                     <h3>1. Switch Worlds</h3>
-                    <p>Use the top-left switcher to jump between <strong>Earth</strong>, <strong>Mars</strong>, and the <strong>Moon</strong>. Each body loads real 3D terrain and planetary proportions.</p>
+                    <p>Use the top menu switcher to jump between Earth, Mars, and the Moon.</p>
                 </div>
                 <div class="guide-item">
-                    <h3>2. Navigate in 3D</h3>
-                    <ul>
-                        <li><strong>Rotate:</strong> Left-click and drag</li>
-                        <li><strong>Zoom:</strong> Scroll wheel up/down</li>
-                        <li><strong>Tilt / Orbit:</strong> Hold middle-click (or Ctrl + drag)</li>
-                    </ul>
+                    <h3>2. Custom Locations</h3>
+                    <p>When viewing Mars or the Moon, use the right sidebar panel to input custom latitude, longitude, and location names.</p>
                 </div>
                 <div class="guide-item">
-                    <h3>3. Fly to Landmarks</h3>
-                    <p>Click any location pill in the top-right panel to smoothly glide down from orbit directly to famous craters, mountains, and landing sites.</p>
+                    <h3>3. Find Earth Matches</h3>
+                    <p>Run the algorithm on your saved custom locations to pinpoint equivalent coordinates and error radii on Earth.</p>
                 </div>
             </div>
             <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Back to Globe</button>
         </div>
     </section>
 
-    <!-- ABOUT SECTION (Overlay) -->
+    <!-- ABOUT SECTION -->
     <section id="aboutSection" class="page-overlay hidden">
         <div class="overlay-card">
             <h2>About Solar System Explorer</h2>
-            <p>This interactive 3D web application lets you explore planetary surfaces across our inner solar system directly in your browser without installing heavy software.</p>
-            <div class="tech-stack">
-                <h3>Powered By:</h3>
-                <ul>
-                    <li><strong>CesiumJS:</strong> Open-source 3D geospatial globe engine</li>
-                    <li><strong>Planetary Ellipsoids:</strong> Accurate WGS84 (Earth), Mars, and Lunar reference spheres</li>
-                    <li><strong>3D Tilesets:</strong> High-resolution elevation and imagery streamed via Cesium ion</li>
-                </ul>
-            </div>
+            <p>This interactive web application lets you explore planetary surfaces and process geological coordinates across CSV datasets.</p>
             <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Explore Now</button>
         </div>
     </section>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="hidden">
+    <!-- Loading Overlay with Big Rounded Logo -->
+    <div id="loadingOverlay">
+        <img src="logo.png" alt="Explorer Logo" class="loading-logo">
         <div class="spinner"></div>
-        <span id="loadingText">Initializing...</span>
+        <span id="loadingText">Initializing Explorer...</span>
     </div>
 
     <script src="app.js"></script>
