@@ -8,9 +8,6 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: main
     strategy:
       fail-fast: false
       matrix:
@@ -25,7 +22,6 @@ jobs:
       with:
         python-version: '3.11'
         cache: 'pip'
-        cache-dependency-path: 'main/requirements.txt'
 
     - name: Install Dependencies
       run: |
@@ -42,7 +38,7 @@ jobs:
           --add-data "C4.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." \
           --add-data "C5.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." \
           --add-data "index.html${{ matrix.os == 'windows-latest' && ';' || ':' }}." \
-          --add-data "styles.css${{ matrix.os == 'windows-latest' && ';' || ':' }}." \
+          --add-data "style.css${{ matrix.os == 'windows-latest' && ';' || ':' }}." \
           --add-data "app.js${{ matrix.os == 'windows-latest' && ';' || ':' }}." \
           desktop_app.py
 
@@ -50,4 +46,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Planetary-Explorer-${{ matrix.os }}
-        path: main/dist/
+        path: dist/
