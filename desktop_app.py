@@ -1,4 +1,5 @@
 import os
+import socket
 import sys
 import threading
 import time
@@ -6,9 +7,15 @@ import webbrowser
 import uvicorn
 from script import app  # Imports your FastAPI instance from script.py
 
+def get_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+PORT = get_free_port()
+
 def run_server():
-    # Run FastAPI locally on loopback port 8000
-    uvicorn_config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="error")
+    uvicorn_config = uvicorn.Config(app, host="127.0.0.1", port=PORT, log_level="error")
     server = uvicorn.Server(uvicorn_config)
     server.run()
 
@@ -18,10 +25,10 @@ if __name__ == '__main__':
     server_thread.start()
 
     # 2. Give the server a brief moment to spin up
-    time.sleep(1.0)
+    time.sleep(1.5)
 
-    # 3. Open your fully GPU-accelerated default browser to the local app
-    url = "http://127.0.0.1:8000/"
+    # 3. Open your default browser to the dynamically chosen free port
+    url = f"http://127.0.0.1:{PORT}/"
     print(f"--- Planetary Analog Explorer Running ---")
     print(f"Opening local app at: {url}")
     webbrowser.open(url)
