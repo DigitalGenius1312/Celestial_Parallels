@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import os
 import sys
+import threading
 
 def get_resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
@@ -277,6 +278,28 @@ def calculate_pinpoint(req: LocationRequest):
         "error_km": float(best['pinpoint_error_km']),
         "S_score": float(best['S_refined'])
     }
+
+last_heartbeat = time.time()
+heartbeat_started = False
+
+@app.post("/api/heartbeat")
+def receive_heartbeat():
+    global last_heartbeat, heartbeat_started
+    last_heartbeat = time.time()
+    heartbeat_started = True
+    return {"status": "alive"}
+
+@app.post("/api/shutdown")
+def shutdown_app():
+    os._exit(0)
+
+def monitor_browser():
+    while True:
+        time.sleep(2)
+        if heartbeat_started and (time.time() - last_heartbeat > 6):
+            os._exit(0)
+
+threading.Thread(target=monitor_browser, daemon=True).start()
 
 # Mount static files so index.html, styles.css, and app.js serve at root /
 app.mount("/", StaticFiles(directory=get_resource_path("."), html=True), name="static")
