@@ -278,3 +278,13 @@ async function switchBody(bodyType, buttonElement) {
 window.addEventListener('DOMContentLoaded', () => {
     switchBody('earth', document.querySelector('.planet-btn'));
 });
+
+// Keep background server alive while tab is open
+setInterval(() => {
+    fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
+}, 2000);
+
+// Shut down background server immediately when browser tab closes
+window.addEventListener('beforeunload', () => {
+    navigator.sendBeacon('/api/shutdown');
+});
