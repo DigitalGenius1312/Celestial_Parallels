@@ -281,14 +281,21 @@ const defaultLocations = {
 
 function addGlobePin(name, lat, lon, isCustom = false) {
     if (!viewer) return null;
+
+    // Dynamically select the correct planet ellipsoid so pins map accurately to Mars/Moon/Earth
+    let ellipsoid = Cesium.Ellipsoid.WGS84;
+    if (currentBody === 'mars') ellipsoid = Cesium.Ellipsoid.MARS;
+    if (currentBody === 'moon') ellipsoid = Cesium.Ellipsoid.MOON;
+
+    const position = Cesium.Cartesian3.fromDegrees(lon, lat, 0, ellipsoid);
+
     return viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(lon, lat, 0),
+        position: position,
         point: {
             pixelSize: isCustom ? 11 : 9,
             color: isCustom ? Cesium.Color.GOLD : Cesium.Color.CYAN,
             outlineColor: Cesium.Color.BLACK,
             outlineWidth: 2
-            // Removed CLAMP_TO_3D_TILE height reference to prevent floating/flying off issues on Mars/Moon
         },
         label: {
             text: name,
@@ -436,30 +443,6 @@ async function switchBody(bodyType, buttonElement) {
             const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(bodyData[bodyType].assetId);
             viewer.scene.primitives.add(tileset);
             await viewer.flyTo(tileset);
-
-            // --- FIX FOR MARS/MOON ZOOM & ROTATION FRICTION ---
-            const controller = viewer.scene.screenSpaceCameraController;
-            const planetRadius = bodyType === 'mars' ? 3389500 : 1737400;
-            
-            // Adjust inertia and damping parameters to make rotation/panning smooth and responsive
-            controller.inertiaSpin = 0.2;
-            controller.inertiaTranslate = 0.2;
-            controller.inertiaZoom = 0.2;
-            
-            controller.minimumZoomDistance = 200; 
-            controller.maximumZoomDistance = planetRadius * 6.0; 
-            controller.zoomEventTypes = [
-                Cesium.CameraEventType.WHEEL,
-                Cesium.CameraEventType.PINCH
-            ];
-            controller.tiltEventTypes = [
-                Cesium.CameraEventType.RIGHT_DRAG,
-                Cesium.CameraEventType.PINCH,
-                {
-                    eventType: Cesium.CameraEventType.LEFT_DRAG,
-                    modifier: Cesium.KeyboardEventModifier.CTRL
-                }
-            ];
 
             renderPresetLocations(bodyType);
         }
