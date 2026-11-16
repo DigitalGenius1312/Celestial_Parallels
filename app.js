@@ -284,13 +284,13 @@ const defaultLocations = {
 function addGlobePin(name, lat, lon, isCustom = false) {
     if (!viewer) return null;
     return viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(lon, lat, 1500),
+        position: Cesium.Cartesian3.fromDegrees(lon, lat, 0),
         point: {
             pixelSize: isCustom ? 11 : 9,
             color: isCustom ? Cesium.Color.GOLD : Cesium.Color.CYAN,
             outlineColor: Cesium.Color.BLACK,
             outlineWidth: 2,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY
+            heightReference: Cesium.HeightReference.CLAMP_TO_3D_TILE
         },
         label: {
             text: name,
@@ -301,7 +301,8 @@ function addGlobePin(name, lat, lon, isCustom = false) {
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             pixelOffset: new Cesium.Cartesian2(0, -12),
-            disableDepthTestDistance: Number.POSITIVE_INFINITY
+            heightReference: Cesium.HeightReference.CLAMP_TO_3D_TILE,
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 8000000.0)
         }
     });
 }
@@ -419,6 +420,28 @@ async function switchBody(bodyType, buttonElement) {
 
             const tileset = await Cesium.createGooglePhotorealistic3DTileset();
             viewer.scene.primitives.add(tileset);
+            await viewer.flyTo(tileset);
+            
+            // Tune zoom and rotation controls for Moon and Mars 3D tilesets
+            const controller = viewer.scene.screenSpaceCameraController;
+            const planetRadius = bodyType === 'mars' ? 3389500 : 1737400;
+            controller.minimumZoomDistance = 500; // Allow zooming down to 500m above craters
+            controller.maximumZoomDistance = planetRadius * 4.5; // Prevent zooming too far into deep space
+            controller.zoomEventTypes = [
+                Cesium.CameraEventType.WHEEL,
+                Cesium.CameraEventType.PINCH
+            ];
+            controller.tiltEventTypes = [
+                Cesium.CameraEventType.RIGHT_DRAG,
+                Cesium.CameraEventType.PINCH,
+                {
+                    eventType: Cesium.CameraEventType.LEFT_DRAG,
+                    modifier: Cesium.KeyboardEventModifier.CTRL
+                }
+            ];
+
+            renderPresetLocations(bodyType);
+            
         } else {
             Cesium.Ellipsoid.default = bodyType === 'mars' ? Cesium.Ellipsoid.MARS : Cesium.Ellipsoid.MOON;
             
