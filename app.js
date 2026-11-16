@@ -66,11 +66,17 @@ function handleParamSubmit(event) {
     infoDiv.appendChild(nameSpan);
     infoDiv.appendChild(coordsSpan);
 
-    // Cross icon button to remove block
+    // Drop a gold pin on the 3D globe for this custom location
+    const pinEntity = addGlobePin(name, lat, lon, true);
+
+    // Cross icon button to remove both the block and the globe pin
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-block-btn';
     removeBtn.innerHTML = '&times;';
-    removeBtn.onclick = () => block.remove();
+    removeBtn.onclick = () => {
+        block.remove();
+        if (viewer && pinEntity) viewer.entities.remove(pinEntity);
+    };
 
     headerDiv.appendChild(infoDiv);
     headerDiv.appendChild(removeBtn);
@@ -84,9 +90,6 @@ function handleParamSubmit(event) {
 
     block.appendChild(findEarthBtn);
     listContainer.appendChild(block);
-    
-    // Drop a gold pin on the 3D globe for this custom location
-    addGlobePin(name, lat, lon, true);
     
     // Reset input form
     document.getElementById('planetaryForm').reset();
@@ -279,8 +282,8 @@ const defaultLocations = {
 };
 
 function addGlobePin(name, lat, lon, isCustom = false) {
-    if (!viewer) return;
-    viewer.entities.add({
+    if (!viewer) return null;
+    return viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(lon, lat, 1500),
         point: {
             pixelSize: isCustom ? 11 : 9,
