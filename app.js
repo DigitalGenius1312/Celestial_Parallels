@@ -79,6 +79,28 @@ function handleParamSubmit(event) {
     document.getElementById('planetaryForm').reset();
 }
 
+// Fetch human-readable Earth place name from coordinates
+async function fetchEarthPlaceName(lat, lon) {
+    try {
+        const res = await fetch(
+            `https://openstreetmap.org{lat}&lon=${lon}&zoom=8`,
+            { headers: { 'Accept-Language': 'en' } }
+        );
+        if (!res.ok) return "Remote Terrestrial Region";
+        const geo = await res.json();
+        if (geo.address) {
+            const region = geo.address.city || geo.address.town || geo.address.county || geo.address.state || geo.address.region || "";
+            const country = geo.address.country || "";
+            const formatted = [region, country].filter(Boolean).join(", ");
+            return formatted || geo.display_name || "Uninhabited Landmass";
+        }
+        return geo.display_name || "Uninhabited Landmass";
+    } catch (e) {
+        return "Remote Terrestrial Region";
+    }
+}
+
+
 // Two-Step Pinpoint & Error Module Integration with Dynamic Progress Loading Screen
 async function processEarthLocation(name, lat, lon) {
     const overlay = document.getElementById('loadingOverlay');
@@ -155,6 +177,20 @@ async function processEarthLocation(name, lat, lon) {
                 outlineColor: Cesium.Color.CYAN
             }
         });
+
+        // 8. Populate and display the Earth Analog Match Side Panel
+        const sourceBodyName = currentBody.charAt(0).toUpperCase() + currentBody.slice(1);
+        document.getElementById('resultSourceTarget').innerText = `Analog for ${name} (${sourceBodyName}: ${lat}°, ${lon}°)`;
+        document.getElementById('resultLat').innerText = `${derivedLat.toFixed(4)}°`;
+        document.getElementById('resultLon').innerText = `${derivedLon.toFixed(4)}°`;
+        document.getElementById('resultScore').innerText = data.S_score ? `${(data.S_score * 100).toFixed(1)}%` : "N/A";
+        document.getElementById('resultError').innerText = `±${errorRadiusKm} km`;
+        document.getElementById('resultPlaceName').innerText = "Identifying location...";
+        document.getElementById('analogResultPanel').classList.remove('hidden');
+        
+        const placeName = await fetchEarthPlaceName(derivedLat, derivedLon);
+        document.getElementById('resultPlaceName').innerText = placeName;
+
 
     } catch (error) {
         console.error("Error communicating with Python API:", error);
