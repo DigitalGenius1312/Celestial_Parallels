@@ -5,6 +5,10 @@ let viewer = null;
 let currentBody = 'earth';
 let lastMatch = null;
 
+// Explicit custom ellipsoids compatible with CesiumJS v1.115
+const marsEllipsoid = new Cesium.Ellipsoid(3389500.0, 3389500.0, 3389500.0);
+const moonEllipsoid = new Cesium.Ellipsoid(1737400.0, 1737400.0, 1737400.0);
+
 async function recenterOnLastMatch() {
     if (!lastMatch) return;
     if (currentBody !== 'earth') {
@@ -282,10 +286,10 @@ const defaultLocations = {
 function addGlobePin(name, lat, lon, isCustom = false) {
     if (!viewer) return null;
 
-    // Dynamically select the correct planet ellipsoid so pins map accurately to Mars/Moon/Earth
+    // Use our custom compatibility ellipsoids for Mars and Moon
     let ellipsoid = Cesium.Ellipsoid.WGS84;
-    if (currentBody === 'mars') ellipsoid = Cesium.Ellipsoid.MARS;
-    if (currentBody === 'moon') ellipsoid = Cesium.Ellipsoid.MOON;
+    if (currentBody === 'mars') ellipsoid = marsEllipsoid;
+    if (currentBody === 'moon') ellipsoid = moonEllipsoid;
 
     const position = Cesium.Cartesian3.fromDegrees(lon, lat, 0, ellipsoid);
 
@@ -427,7 +431,8 @@ async function switchBody(bodyType, buttonElement) {
             renderPresetLocations(bodyType);
             
         } else {
-            Cesium.Ellipsoid.default = bodyType === 'mars' ? Cesium.Ellipsoid.MARS : Cesium.Ellipsoid.MOON;
+            // Use custom ellipsoid mapping for the globe viewer itself
+            Cesium.Ellipsoid.default = bodyType === 'mars' ? marsEllipsoid : moonEllipsoid;
             
             viewer = new Cesium.Viewer('cesiumContainer', {
                 animation: false,
