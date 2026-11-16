@@ -67,7 +67,7 @@
         <div id="analogResultPanel" class="hidden">
             <div class="panel-header">
                 <h3>Earth Analog Match</h3>
-                <button id="closeResultBtn" onclick="closeAnalogResultPanel()" title="Close Panel">&times;</button>
+                <button id="closeResultBtn" onclick="document.getElementById('analogResultPanel').classList.add('hidden')" title="Close Panel">&times;</button>
             </div>
             <div class="result-body">
                 <div id="resultPlaceName" class="result-place">Identifying region...</div>
@@ -90,7 +90,7 @@
                         <span class="metric-value" id="resultError">--</span>
                     </div>
                 </div>
-                <button id="recenterMatchBtn" class="action-btn full-width-btn">Re-center on Match</button>
+                <button id="recenterMatchBtn" class="action-btn full-width-btn" onclick="recenterOnLastMatch()">Re-center on Match</button>
             </div>
         </div>
         
