@@ -99,7 +99,7 @@ function handleParamSubmit(event) {
 async function fetchEarthPlaceName(lat, lon) {
     try {
         const res = await fetch(
-            `https://openstreetmap.org{lat}&lon=${lon}&zoom=8`,
+            `https://openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=8`,
             { headers: { 'Accept-Language': 'en' } }
         );
         if (!res.ok) return "Remote Terrestrial Region";
@@ -124,7 +124,6 @@ async function processEarthLocation(name, lat, lon) {
     overlay.classList.remove('hidden');
 
     const sourceBodyName = currentBody.charAt(0).toUpperCase() + currentBody.slice(1);
-
 
     // Dynamic progress messages sequence
     const progressMessages = [
@@ -216,7 +215,6 @@ async function processEarthLocation(name, lat, lon) {
         const placeName = await fetchEarthPlaceName(derivedLat, derivedLon);
         document.getElementById('resultPlaceName').innerText = placeName;
 
-
     } catch (error) {
         console.error("Error communicating with Python API:", error);
         alert("Could not reach the Python calculation engine. Make sure server.py is running!");
@@ -289,8 +287,8 @@ function addGlobePin(name, lat, lon, isCustom = false) {
             pixelSize: isCustom ? 11 : 9,
             color: isCustom ? Cesium.Color.GOLD : Cesium.Color.CYAN,
             outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 2,
-            heightReference: Cesium.HeightReference.CLAMP_TO_3D_TILE
+            outlineWidth: 2
+            // Removed CLAMP_TO_3D_TILE height reference to prevent floating/flying off issues on Mars/Moon
         },
         label: {
             text: name,
@@ -301,7 +299,6 @@ function addGlobePin(name, lat, lon, isCustom = false) {
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             pixelOffset: new Cesium.Cartesian2(0, -12),
-            heightReference: Cesium.HeightReference.CLAMP_TO_3D_TILE,
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 8000000.0)
         }
     });
@@ -314,10 +311,8 @@ function renderPresetLocations(bodyType) {
 
     const sites = defaultLocations[bodyType] || [];
     sites.forEach(site => {
-        // 1. Drop pin on the 3D globe
         addGlobePin(site.name, site.lat, site.lon, false);
 
-        // 2. Create sidebar card
         const block = document.createElement('div');
         block.className = 'location-block';
 
@@ -421,24 +416,6 @@ async function switchBody(bodyType, buttonElement) {
             const tileset = await Cesium.createGooglePhotorealistic3DTileset();
             viewer.scene.primitives.add(tileset);
             await viewer.flyTo(tileset);
-            
-            // Tune zoom and rotation controls for Moon and Mars 3D tilesets
-            const controller = viewer.scene.screenSpaceCameraController;
-            const planetRadius = bodyType === 'mars' ? 3389500 : 1737400;
-            controller.minimumZoomDistance = 500; // Allow zooming down to 500m above craters
-            controller.maximumZoomDistance = planetRadius * 4.5; // Prevent zooming too far into deep space
-            controller.zoomEventTypes = [
-                Cesium.CameraEventType.WHEEL,
-                Cesium.CameraEventType.PINCH
-            ];
-            controller.tiltEventTypes = [
-                Cesium.CameraEventType.RIGHT_DRAG,
-                Cesium.CameraEventType.PINCH,
-                {
-                    eventType: Cesium.CameraEventType.LEFT_DRAG,
-                    modifier: Cesium.KeyboardEventModifier.CTRL
-                }
-            ];
 
             renderPresetLocations(bodyType);
             
@@ -459,6 +436,30 @@ async function switchBody(bodyType, buttonElement) {
             const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(bodyData[bodyType].assetId);
             viewer.scene.primitives.add(tileset);
             await viewer.flyTo(tileset);
+
+            // --- FIX FOR MARS/MOON ZOOM & ROTATION FRICTION ---
+            const controller = viewer.scene.screenSpaceCameraController;
+            const planetRadius = bodyType === 'mars' ? 3389500 : 1737400;
+            
+            // Adjust inertia and damping parameters to make rotation/panning smooth and responsive
+            controller.inertiaSpin = 0.2;
+            controller.inertiaTranslate = 0.2;
+            controller.inertiaZoom = 0.2;
+            
+            controller.minimumZoomDistance = 200; 
+            controller.maximumZoomDistance = planetRadius * 6.0; 
+            controller.zoomEventTypes = [
+                Cesium.CameraEventType.WHEEL,
+                Cesium.CameraEventType.PINCH
+            ];
+            controller.tiltEventTypes = [
+                Cesium.CameraEventType.RIGHT_DRAG,
+                Cesium.CameraEventType.PINCH,
+                {
+                    eventType: Cesium.CameraEventType.LEFT_DRAG,
+                    modifier: Cesium.KeyboardEventModifier.CTRL
+                }
+            ];
 
             renderPresetLocations(bodyType);
         }
