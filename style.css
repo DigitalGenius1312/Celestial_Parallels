@@ -681,3 +681,55 @@ html, body, #homeSection, #cesiumContainer {
     0%, 100% { opacity: 0.5; }
     50% { opacity: 1; }
 }
+
+/* --- PRESET SITES & LANDMARKS IN SIDEBAR --- */
+.presets-divider {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #4db8ff;
+}
+
+#presetLocationsList {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.location-block {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+}
+
+.location-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.find-earth-btn {
+    width: 100%;
+    background: rgba(0, 122, 204, 0.22);
+    color: #4db8ff;
+    border: 1px solid rgba(0, 122, 204, 0.45);
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.find-earth-btn:hover {
+    background: #007acc;
+    color: #ffffff;
+}
