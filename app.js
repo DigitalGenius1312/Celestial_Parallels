@@ -84,7 +84,10 @@ function handleParamSubmit(event) {
 
     block.appendChild(findEarthBtn);
     listContainer.appendChild(block);
-
+    
+    // Drop a gold pin on the 3D globe for this custom location
+    addGlobePin(name, lat, lon, true);
+    
     // Reset input form
     document.getElementById('planetaryForm').reset();
 }
@@ -247,6 +250,103 @@ const bodyData = {
     }
 };
 
+// --- DEFAULT PRESET BASES & LANDMARKS ---
+const defaultLocations = {
+    moon: [
+        { name: "Tranquility Base (Apollo 11)", lat: 0.67, lon: 23.47 },
+        { name: "Shackleton Crater (Lunar South Pole)", lat: -89.90, lon: 0.00 },
+        { name: "Copernicus Crater", lat: 9.62, lon: -20.08 },
+        { name: "Clavius Crater", lat: -58.40, lon: -14.40 },
+        { name: "Plato Crater", lat: 51.60, lon: -9.30 },
+        { name: "Mare Imbrium", lat: 32.80, lon: -15.60 },
+        { name: "Mare Serenitatis", lat: 28.00, lon: 17.50 },
+        { name: "Von Kármán Crater (Chang'e 4)", lat: -44.45, lon: 176.25 },
+        { name: "Tycho Crater", lat: -43.31, lon: -11.36 },
+        { name: "Aristarchus / Vallis Schröteri", lat: 23.73, lon: -47.49 }
+    ],
+    mars: [
+        { name: "Gale Crater (Curiosity)", lat: -5.37, lon: 137.81 },
+        { name: "Jezero Crater (Perseverance)", lat: 18.38, lon: 77.58 },
+        { name: "Hellas Planitia", lat: -42.43, lon: 70.50 },
+        { name: "Elysium Mons", lat: 25.02, lon: 147.21 },
+        { name: "Arsia Mons (Tharsis)", lat: -8.26, lon: -120.09 },
+        { name: "Utopia Planitia (Zhurong)", lat: 46.74, lon: 117.52 },
+        { name: "Argyre Planitia", lat: -49.84, lon: -43.31 },
+        { name: "Coprates Chasma / Valles Marineris", lat: -21.40, lon: -64.40 },
+        { name: "Olympus Mons", lat: 18.65, lon: -133.80 },
+        { name: "Bagnold Dunes", lat: -4.77, lon: 137.37 }
+    ]
+};
+
+function addGlobePin(name, lat, lon, isCustom = false) {
+    if (!viewer) return;
+    viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(lon, lat, 1500),
+        point: {
+            pixelSize: isCustom ? 11 : 9,
+            color: isCustom ? Cesium.Color.GOLD : Cesium.Color.CYAN,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 2,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+        },
+        label: {
+            text: name,
+            font: '600 12px sans-serif',
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -12),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }
+    });
+}
+
+function renderPresetLocations(bodyType) {
+    const presetContainer = document.getElementById('presetLocationsList');
+    if (!presetContainer) return;
+    presetContainer.innerHTML = '';
+
+    const sites = defaultLocations[bodyType] || [];
+    sites.forEach(site => {
+        // 1. Drop pin on the 3D globe
+        addGlobePin(site.name, site.lat, site.lon, false);
+
+        // 2. Create sidebar card
+        const block = document.createElement('div');
+        block.className = 'location-block';
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'location-header';
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'location-info';
+        infoDiv.onclick = () => flyToLocation(site.lon, site.lat, 120000);
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'location-name';
+        nameSpan.innerText = site.name;
+
+        const coordsSpan = document.createElement('span');
+        coordsSpan.className = 'location-coords';
+        coordsSpan.innerText = `lat: ${site.lat}, lon: ${site.lon}`;
+
+        infoDiv.appendChild(nameSpan);
+        infoDiv.appendChild(coordsSpan);
+        headerDiv.appendChild(infoDiv);
+        block.appendChild(headerDiv);
+
+        const findEarthBtn = document.createElement('button');
+        findEarthBtn.className = 'find-earth-btn';
+        findEarthBtn.innerText = 'Find suitable earth locations';
+        findEarthBtn.onclick = () => processEarthLocation(site.name, site.lat, site.lon);
+
+        block.appendChild(findEarthBtn);
+        presetContainer.appendChild(block);
+    });
+}
+
 function updateUI(bodyType) {
     const data = bodyData[bodyType];
     document.getElementById('bodyTitle').innerText = data.title;
@@ -271,7 +371,6 @@ function flyToLocation(lon, lat, height) {
     });
 }
 
-
 async function switchBody(bodyType, buttonElement) {
     currentBody = bodyType;
 
@@ -286,7 +385,6 @@ async function switchBody(bodyType, buttonElement) {
             resultPanel.classList.remove('hidden');
         }
     }
-
 
     document.querySelectorAll('.planet-btn').forEach(btn => btn.classList.remove('active'));
     if (buttonElement) buttonElement.classList.add('active');
@@ -335,6 +433,8 @@ async function switchBody(bodyType, buttonElement) {
             const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(bodyData[bodyType].assetId);
             viewer.scene.primitives.add(tileset);
             await viewer.flyTo(tileset);
+
+            renderPresetLocations(bodyType);
         }
     } catch (error) {
         console.error(`Error loading ${bodyType}:`, error);
