@@ -276,11 +276,17 @@ async function switchBody(bodyType, buttonElement) {
     currentBody = bodyType;
 
     const paramsPanel = document.getElementById('parametersPanel');
+    const resultPanel = document.getElementById('analogResultPanel');
     if (bodyType === 'mars' || bodyType === 'moon') {
         paramsPanel.classList.remove('hidden');
+        resultPanel.classList.add('hidden');
     } else {
         paramsPanel.classList.add('hidden');
+        if (lastMatch) {
+            resultPanel.classList.remove('hidden');
+        }
     }
+
 
     document.querySelectorAll('.planet-btn').forEach(btn => btn.classList.remove('active'));
     if (buttonElement) buttonElement.classList.add('active');
