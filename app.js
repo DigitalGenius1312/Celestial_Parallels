@@ -3,6 +3,16 @@ Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZS
 
 let viewer = null;
 let currentBody = 'earth';
+let lastMatch = null;
+
+async function recenterOnLastMatch() {
+    if (!lastMatch) return;
+    if (currentBody !== 'earth') {
+        await switchBody('earth', document.querySelector('.planet-btn'));
+    }
+    flyToLocation(lastMatch.lon, lastMatch.lat, lastMatch.cameraHeight);
+}
+
 
 // --- NAVIGATION & UI LOGIC ---
 function showSection(sectionName, navBtn) {
@@ -107,6 +117,9 @@ async function processEarthLocation(name, lat, lon) {
     const loadingText = document.getElementById('loadingText');
     overlay.classList.remove('hidden');
 
+    const sourceBodyName = currentBody.charAt(0).toUpperCase() + currentBody.slice(1);
+
+
     // Dynamic progress messages sequence
     const progressMessages = [
         `Analyzing coordinates for ${name}...`,
@@ -154,7 +167,14 @@ async function processEarthLocation(name, lat, lon) {
         // 4. Calculate proper zoom altitude based on error radius (framing the error circle cleanly)
         const radiusMeters = errorRadiusKm * 1000;
         const cameraHeight = Math.max(radiusMeters * 10, 15000);
-
+        lastMatch = {
+            lat: derivedLat,
+            lon: derivedLon,
+            radiusMeters: radiusMeters,
+            cameraHeight: cameraHeight
+        };
+        document.getElementById('recenterMatchBtn').onclick = recenterOnLastMatch;
+        
         // 5. Fly the Cesium camera to the calculated Earth coordinates and zoom in appropriately
         viewer.camera.flyTo({
             destination: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat, cameraHeight),
@@ -179,7 +199,6 @@ async function processEarthLocation(name, lat, lon) {
         });
 
         // 8. Populate and display the Earth Analog Match Side Panel
-        const sourceBodyName = currentBody.charAt(0).toUpperCase() + currentBody.slice(1);
         document.getElementById('resultSourceTarget').innerText = `Analog for ${name} (${sourceBodyName}: ${lat}°, ${lon}°)`;
         document.getElementById('resultLat').innerText = `${derivedLat.toFixed(4)}°`;
         document.getElementById('resultLon').innerText = `${derivedLon.toFixed(4)}°`;
@@ -239,11 +258,19 @@ function updateUI(bodyType) {
 
 function flyToLocation(lon, lat, height) {
     if (!viewer) return;
+    viewer.trackedEntity = undefined;
+    viewer.camera.cancelFlight();
     viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(lon, lat, height),
-        duration: 2.5
+        orientation: {
+            heading: Cesium.Math.toRadians(0.0),
+            pitch: Cesium.Math.toRadians(-90.0),
+            roll: 0.0
+        },
+        duration: 1.8
     });
 }
+
 
 async function switchBody(bodyType, buttonElement) {
     currentBody = bodyType;
