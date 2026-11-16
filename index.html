@@ -63,6 +63,37 @@
             <div id="savedLocationsList"></div>
         </div>
 
+        <!-- EARTH ANALOG MATCH RESULT SIDE PANEL -->
+        <div id="analogResultPanel" class="hidden">
+            <div class="panel-header">
+                <h3>Earth Analog Match</h3>
+                <button id="closeResultBtn" onclick="closeAnalogResultPanel()" title="Close Panel">&times;</button>
+            </div>
+            <div class="result-body">
+                <div id="resultPlaceName" class="result-place">Identifying region...</div>
+                <div id="resultSourceTarget" class="result-subtext"></div>
+                <div class="result-metrics">
+                    <div class="metric-box">
+                        <span class="metric-label">Latitude</span>
+                        <span class="metric-value" id="resultLat">--</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Longitude</span>
+                        <span class="metric-value" id="resultLon">--</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Similarity (S)</span>
+                        <span class="metric-value" id="resultScore">--</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Error Radius</span>
+                        <span class="metric-value" id="resultError">--</span>
+                    </div>
+                </div>
+                <button id="recenterMatchBtn" class="action-btn full-width-btn">Re-center on Match</button>
+            </div>
+        </div>
+        
         <!-- Planetary Info Card -->
         <div id="infoCard">
             <h2 id="bodyTitle">Earth</h2>
