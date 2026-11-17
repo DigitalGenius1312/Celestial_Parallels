@@ -733,3 +733,25 @@ html, body, #homeSection, #cesiumContainer {
     background: #007acc;
     color: #ffffff;
 }
+
+/* --- WEIGHT TAGS & HOVER TOOLTIPS --- */
+.param-row {
+    cursor: help;
+    padding: 3px 5px;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.param-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.weight-tag {
+    font-size: 9px;
+    color: #8f9bb3;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 4px;
+    font-weight: 600;
+}
