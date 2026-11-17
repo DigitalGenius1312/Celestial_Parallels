@@ -244,7 +244,7 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
         'lat': pin_lat,
         'lon': pin_lon,
         'S_refined': round(best['S_refined'], 4),
-        'pinpoint_error_km': final_error
+        'pinpoint_error_km': final_error,
         'C1': round(float(best['C1']), 4),
         'C2': round(float(best['C2']), 4),
         'C3': round(float(best['C3']), 4),
