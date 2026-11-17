@@ -97,53 +97,82 @@
                         <span class="metric-value" id="resultError">--</span>
                     </div>
                 </div>
-                <!-- Parameter Breakdown (C1 - C5) with Weights & Feature Tooltips -->
+                <!-- Parameter Breakdown (C1 - C5) with Live Sub-Parameter Match % -->
                 <div class="param-breakdown">
-                    <div class="breakdown-title">Parameter Similarity &amp; Weights</div>
+                    <div class="breakdown-title">Parameter Similarity &amp; Weights <span class="hint-text">(Hover or click)</span></div>
                     
-                    <div class="param-row" title="Evaluates: Silicate, Basalt, Iron Oxide, Plagioclase, Igneous, Sedimentary, Metamorphic, Regolith">
+                    <div class="param-row" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
                             <span>Mineralogy (C1 <small class="weight-tag">20%</small>)</span>
                             <span id="scoreC1">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC1" class="param-bar-fill"></div></div>
+                        <div class="subparam-list">
+                            <span>Silicate: <b data-feat="g1_silicate">--</b></span>
+                            <span>Basalt: <b data-feat="g2_basalt">--</b></span>
+                            <span>Iron Oxide: <b data-feat="g3_iron_oxide">--</b></span>
+                            <span>Plagioclase: <b data-feat="g4_plagioclase">--</b></span>
+                            <span>Igneous: <b data-feat="g5_igneous">--</b></span>
+                            <span>Sedimentary: <b data-feat="g6_sedimentary">--</b></span>
+                            <span>Metamorphic: <b data-feat="g7_metamorphic">--</b></span>
+                            <span>Regolith: <b data-feat="g8_regolith">--</b></span>
+                        </div>
                     </div>
 
-                    <div class="param-row" title="Evaluates: Standardized Elevation, Surface Slope, Terrain Roughness, Crater Density">
+                    <div class="param-row" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
                             <span>Topography (C2 <small class="weight-tag">25%</small>)</span>
                             <span id="scoreC2">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC2" class="param-bar-fill"></div></div>
+                        <div class="subparam-list">
+                            <span>Elevation: <b data-feat="u_elevation_body_z">--</b></span>
+                            <span>Slope: <b data-feat="u_slope_body_z">--</b></span>
+                            <span>Roughness: <b data-feat="u_roughness_body_z">--</b></span>
+                            <span>Crater Density: <b data-feat="u_crater">--</b></span>
+                        </div>
                     </div>
 
-                    <div class="param-row" title="Evaluates: Mean Temperature, Diurnal Temperature Range, Solar Illumination">
+                    <div class="param-row" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
                             <span>Thermal Properties (C3 <small class="weight-tag">20%</small>)</span>
                             <span id="scoreC3">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC3" class="param-bar-fill"></div></div>
+                        <div class="subparam-list">
+                            <span>Mean Temp: <b data-feat="z_Tmean_body_z">--</b></span>
+                            <span>Temp Range: <b data-feat="z_Trange_body_z">--</b></span>
+                            <span>Illumination: <b data-feat="z_illum_body_z">--</b></span>
+                        </div>
                     </div>
 
-                    <div class="param-row" title="Evaluates: Water Ice, Subsurface Depth, Permafrost, Surface Hydration">
+                    <div class="param-row" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
                             <span>Subsurface Resources (C4 <small class="weight-tag">20%</small>)</span>
                             <span id="scoreC4">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC4" class="param-bar-fill"></div></div>
+                        <div class="subparam-list">
+                            <span>Water Ice: <b data-feat="u_ice">--</b></span>
+                            <span>Depth: <b data-feat="u_depth">--</b></span>
+                            <span>Permafrost: <b data-feat="u_permafrost">--</b></span>
+                            <span>Hydration: <b data-feat="u_hydration">--</b></span>
+                        </div>
                     </div>
 
-                    <div class="param-row" title="Evaluates: Atmospheric Dust, Wind Speed, Eolian Erosion">
+                    <div class="param-row" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
                             <span>Eolian Dynamics (C5 <small class="weight-tag">15%</small>)</span>
                             <span id="scoreC5">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC5" class="param-bar-fill"></div></div>
+                        <div class="subparam-list">
+                            <span>Dust: <b data-feat="u_dust">--</b></span>
+                            <span>Wind Speed: <b data-feat="u_wind">--</b></span>
+                            <span>Erosion: <b data-feat="u_erosion">--</b></span>
+                        </div>
                     </div>
                 </div>
-                <button id="recenterMatchBtn" class="action-btn full-width-btn" onclick="recenterOnLastMatch()">Re-center on Match</button>
-            </div>
-        </div>
 
         
         <!-- Planetary Info Card -->
