@@ -81,6 +81,9 @@ CATEGORY_WEIGHTS = {'C1': 0.20, 'C2': 0.25, 'C3': 0.20, 'C4': 0.20, 'C5': 0.15}
 # Precompute shrunk inverse covariance matrices
 INV_COVS = {}
 X_active_all = active_df[ALL_FEATURE_COLS].values
+FEATURE_STDS = np.std(X_active_all, axis=0)
+FEATURE_STDS[FEATURE_STDS == 0] = 1.0
+
 col_idx = 0
 for cat, cols in FEATURE_GROUPS.items():
     k = len(cols)
@@ -203,7 +206,8 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
     if local_df.empty:
         res_fallback = pd.DataFrame([{
             'body': 'Earth', 'lat': c_lat, 'lon': c_lon, 'S_refined': best_macro['macro_S'],
-            'grid_res_km': 1.11, 'pinpoint_error_km': 5.0
+            'grid_res_km': 1.11, 'pinpoint_error_km': 5.0,
+            'C1': 0.0, 'C2': 0.0, 'C3': 0.0, 'C4': 0.0, 'C5': 0.0, 'sub_scores': {}
         }])
         res_fallback.index = [1]
         return res_fallback
@@ -228,6 +232,15 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
     best = valid.loc[valid['S_refined'].idxmax()]
     pin_lat, pin_lon = best['lat'], best['lon']
     
+    # Calculate individual match % for all 22 sub-parameters
+    best_vec = np.array(best['vec'])
+    z_diffs = (best_vec - ref_vec) / FEATURE_STDS
+    sub_sim_vals = np.exp(-0.5 * (z_diffs ** 2))
+    sub_scores_dict = {
+        col: round(float(val), 4)
+        for col, val in zip(ALL_FEATURE_COLS, sub_sim_vals)
+    }
+
     d_shift_km = haversine_km(raw_lat, raw_lon, pin_lat, pin_lon)
     top_plateau = valid[valid['S_refined'] >= 0.99 * best['S_refined']]
     plateau_spread_km = np.sqrt(len(top_plateau)) * best['grid_res_km'] * 0.5
@@ -249,7 +262,8 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
         'C2': round(float(best['C2']), 4),
         'C3': round(float(best['C3']), 4),
         'C4': round(float(best['C4']), 4),
-        'C5': round(float(best['C5']), 4)
+        'C5': round(float(best['C5']), 4),
+        'sub_scores': sub_scores_dict
     }])
     return res_df
 
@@ -291,7 +305,8 @@ def calculate_pinpoint(req: LocationRequest):
             "C3": float(best['C3']),
             "C4": float(best['C4']),
             "C5": float(best['C5'])
-        }
+        },
+        "sub_scores": best['sub_scores']
     }
 
 last_heartbeat = time.time()
