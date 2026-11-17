@@ -284,7 +284,14 @@ def calculate_pinpoint(req: LocationRequest):
         "earth_lat": float(best['lat']),
         "earth_lon": float(best['lon']),
         "error_km": float(best['pinpoint_error_km']),
-        "S_score": float(best['S_refined'])
+        "S_score": float(best['S_refined']),
+        "cat_scores": {
+            "C1": float(best['C1']),
+            "C2": float(best['C2']),
+            "C3": float(best['C3']),
+            "C4": float(best['C4']),
+            "C5": float(best['C5'])
+        }
     }
 
 last_heartbeat = time.time()
