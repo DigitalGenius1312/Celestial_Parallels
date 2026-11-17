@@ -196,16 +196,16 @@
             <h2>How to Use This Tool</h2>
             <div class="guide-grid">
                 <div class="guide-item">
-                    <h3>1. Switch Worlds</h3>
-                    <p>Use the top menu switcher to jump between Earth, Mars, and the Moon.</p>
+                    <h3>1. Switch &amp; Navigate Worlds</h3>
+                    <p>Use the top menu switcher to jump between Earth, Mars, and the Moon. On Earth, hold down the middle mouse button (scroll wheel) and drag to rotate along the Z-axis, allowing you to tilt the camera into a traditional ground-level perspective.</p>
                 </div>
                 <div class="guide-item">
-                    <h3>2. Custom Locations</h3>
-                    <p>When viewing Mars or the Moon, use the right sidebar panel to input custom latitude, longitude, and location names. North and East values are positive whereas the South and West values are negative. Default preset locations of famous landmarks and bases are already present for use.</p>
+                    <h3>2. Custom &amp; Preset Locations</h3>
+                    <p>When viewing Mars or the Moon, use the right sidebar panel to select from default preset locations of famous landmarks and bases, or input custom latitude, longitude, and location names. North and East values are positive whereas South and West values are negative.</p>
                 </div>
                 <div class="guide-item">
                     <h3>3. Find Earth Matches</h3>
-                    <p>Run the algorithm on your saved custom locations to pinpoint analog coordinates, percentage match and error radii on Earth.</p>
+                    <p>Run the algorithm on your selected locations to pinpoint analog coordinates, percentage match, and error radii on Earth. Hover over or click any C1–C5 parameter bar to inspect individual sub-parameter similarity scores, or use Re-center on Match after navigating elsewhere.</p>
                 </div>
             </div>
             <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Back to Globe</button>
@@ -214,10 +214,20 @@
 
     <!-- ABOUT SECTION -->
     <section id="aboutSection" class="page-overlay hidden">
-        <div class="overlay-card">
+        <div class="overlay-card about-card">
             <h2>About Celestial Parallels</h2>
-            <p>We developed a scientifically rigorous Earth analog site selection interactive map integrated with 3D CesiumJS/ion. Our model addresses the issue of there being no rigorous, efficient way to find earth analogs of lunar and martian surfaces. It uses widespread open source planetary data and enforces an area-weighted sub aerial land mask to exclude marine environments, This approach achieves sub-10 km spatial precision while filtering out water, urban, and high-vegetation anomalies. All the user needs to do is input their desired location, and our algorithm will display the closest earth analog based on various parameters such as topology, geology, water content, wind and so on and so forth. This allows for much more rapid location of suitable analogs, allows greater optimization of rover transport on the moon and mars, and it dramatically improves the experience and readiness of biological personnel for extraterrestrial conditions. Our project bridges heavy spatial data science with a 3D digital twin to accurately map Martian and lunar location to their true terrestrial equivalents.</p>
-            <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Explore Now</button>
+            <div class="about-text">
+                <p>We developed a scientifically rigorous Earth analog site selection interactive map integrated with 3D CesiumJS/ion. Our model addresses the lack of an efficient, rigorous method to identify terrestrial analogs of lunar and Martian surfaces.</p>
+                <p>It utilizes widespread open-source planetary data and enforces an area-weighted subaerial land mask to exclude marine environments. This approach achieves sub-10 km spatial precision while filtering out water, urban, and high-vegetation anomalies.</p>
+                <p>Once a user selects or inputs a target location, the algorithm identifies the closest Earth analog across five weighted parameter groups—Mineralogy (C1), Topography (C2), Thermal Properties (C3), Subsurface Resources (C4), and Eolian Dynamics (C5)—enabling rapid analog site selection, rover transport optimization, and improved biological crew readiness for extraterrestrial conditions.</p>
+                <p class="doi-citation">
+                    <strong>Publication:</strong> <a href="https://doi.org" target="_blank" rel="noopener noreferrer">https://doi.org</a>
+                </p>
+            </div>
+            <div class="about-actions">
+                <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Explore Now</button>
+                <a href="https://doi.org" target="_blank" rel="noopener noreferrer" class="paper-link-btn">View Research Paper (Zenodo)</a>
+            </div>
         </div>
     </section>
 
