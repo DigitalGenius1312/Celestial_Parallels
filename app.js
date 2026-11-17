@@ -213,6 +213,16 @@ async function processEarthLocation(name, lat, lon) {
         document.getElementById('resultLon').innerText = `${derivedLon.toFixed(4)}°`;
         document.getElementById('resultScore').innerText = data.S_score ? `${(data.S_score * 100).toFixed(1)}%` : "N/A";
         document.getElementById('resultError').innerText = `±${errorRadiusKm} km`;
+
+        // Update C1 - C5 parameter breakdown bars
+        if (data.cat_scores) {
+            ['C1', 'C2', 'C3', 'C4', 'C5'].forEach(cat => {
+                const pct = ((data.cat_scores[cat] || 0) * 100).toFixed(1);
+                document.getElementById(`score${cat}`).innerText = `${pct}%`;
+                document.getElementById(`bar${cat}`).style.width = `${pct}%`;
+            });
+        }
+
         document.getElementById('resultPlaceName').innerText = "Identifying location...";
         document.getElementById('analogResultPanel').classList.remove('hidden');
         
