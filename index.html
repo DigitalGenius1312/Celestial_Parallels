@@ -97,6 +97,50 @@
                         <span class="metric-value" id="resultError">--</span>
                     </div>
                 </div>
+                <!-- Parameter Breakdown (C1 - C5) with Weights & Feature Tooltips -->
+                <div class="param-breakdown">
+                    <div class="breakdown-title">Parameter Similarity &amp; Weights</div>
+                    
+                    <div class="param-row" title="Evaluates: Silicate, Basalt, Iron Oxide, Plagioclase, Igneous, Sedimentary, Metamorphic, Regolith">
+                        <div class="param-info">
+                            <span>Mineralogy (C1 <small class="weight-tag">20%</small>)</span>
+                            <span id="scoreC1">--</span>
+                        </div>
+                        <div class="param-bar-bg"><div id="barC1" class="param-bar-fill"></div></div>
+                    </div>
+
+                    <div class="param-row" title="Evaluates: Standardized Elevation, Surface Slope, Terrain Roughness, Crater Density">
+                        <div class="param-info">
+                            <span>Topography (C2 <small class="weight-tag">25%</small>)</span>
+                            <span id="scoreC2">--</span>
+                        </div>
+                        <div class="param-bar-bg"><div id="barC2" class="param-bar-fill"></div></div>
+                    </div>
+
+                    <div class="param-row" title="Evaluates: Mean Temperature, Diurnal Temperature Range, Solar Illumination">
+                        <div class="param-info">
+                            <span>Thermal Properties (C3 <small class="weight-tag">20%</small>)</span>
+                            <span id="scoreC3">--</span>
+                        </div>
+                        <div class="param-bar-bg"><div id="barC3" class="param-bar-fill"></div></div>
+                    </div>
+
+                    <div class="param-row" title="Evaluates: Water Ice, Subsurface Depth, Permafrost, Surface Hydration">
+                        <div class="param-info">
+                            <span>Subsurface Resources (C4 <small class="weight-tag">20%</small>)</span>
+                            <span id="scoreC4">--</span>
+                        </div>
+                        <div class="param-bar-bg"><div id="barC4" class="param-bar-fill"></div></div>
+                    </div>
+
+                    <div class="param-row" title="Evaluates: Atmospheric Dust, Wind Speed, Eolian Erosion">
+                        <div class="param-info">
+                            <span>Eolian Dynamics (C5 <small class="weight-tag">15%</small>)</span>
+                            <span id="scoreC5">--</span>
+                        </div>
+                        <div class="param-bar-bg"><div id="barC5" class="param-bar-fill"></div></div>
+                    </div>
+                </div>
                 <button id="recenterMatchBtn" class="action-btn full-width-btn" onclick="recenterOnLastMatch()">Re-center on Match</button>
             </div>
         </div>
