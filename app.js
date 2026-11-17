@@ -445,9 +445,6 @@ async function switchBody(bodyType, buttonElement) {
 
             const tileset = await Cesium.createGooglePhotorealistic3DTileset();
             viewer.scene.primitives.add(tileset);
-            await viewer.flyTo(tileset);
-
-            renderPresetLocations(bodyType);
             
         } else {
             // Use custom ellipsoid mapping for the globe viewer itself
