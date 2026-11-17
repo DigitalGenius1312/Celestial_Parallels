@@ -849,3 +849,70 @@ html, body, #homeSection, #cesiumContainer {
     color: #00f0ff;
     font-weight: 700;
 }
+
+/* --- FORMAL ABOUT SECTION SPACING & DOI LINK --- */
+.about-card {
+    max-width: 720px;
+}
+
+.about-text {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 16px 0 22px 0;
+}
+
+.about-text p {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: #d8dee9;
+}
+
+.doi-citation {
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 13.5px;
+    color: #a0aec0;
+}
+
+.doi-citation a {
+    color: #4db8ff;
+    text-decoration: none;
+}
+
+.doi-citation a:hover {
+    text-decoration: underline;
+}
+
+.about-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.about-actions .action-btn {
+    margin-top: 0;
+}
+
+.paper-link-btn {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0, 122, 204, 0.2);
+    color: #4db8ff;
+    border: 1px solid rgba(77, 184, 255, 0.45);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.22s ease;
+}
+
+.paper-link-btn:hover {
+    background: #007acc;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 122, 204, 0.45);
+}
