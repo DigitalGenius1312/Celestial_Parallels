@@ -223,6 +223,15 @@ async function processEarthLocation(name, lat, lon) {
             });
         }
 
+        // Populate all 22 sub-parameter match percentages
+        if (data.sub_scores) {
+            document.querySelectorAll('[data-feat]').forEach(el => {
+                const key = el.getAttribute('data-feat');
+                const val = data.sub_scores[key];
+                el.innerText = val !== undefined ? `${(val * 100).toFixed(0)}%` : '--';
+            });
+        }
+      
         document.getElementById('resultPlaceName').innerText = "Identifying location...";
         document.getElementById('analogResultPanel').classList.remove('hidden');
         
