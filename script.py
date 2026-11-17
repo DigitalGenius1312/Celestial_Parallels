@@ -212,6 +212,9 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
     grads = np.array(local_df['grad'].tolist())
     S_sub, cat_sub = vectorized_score_vectors(X_sub, ref_vec, local_grads=grads)
     local_df['S_refined'] = S_sub
+
+    for cat in ['C1', 'C2', 'C3', 'C4', 'C5']:
+        local_df[cat] = cat_sub[cat]
         
     valid = local_df[(local_df['water_mask'] == 0) & (local_df['ndvi'] < 0.25)].copy()
     if valid.empty:
@@ -242,6 +245,11 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
         'lon': pin_lon,
         'S_refined': round(best['S_refined'], 4),
         'pinpoint_error_km': final_error
+        'C1': round(float(best['C1']), 4),
+        'C2': round(float(best['C2']), 4),
+        'C3': round(float(best['C3']), 4),
+        'C4': round(float(best['C4']), 4),
+        'C5': round(float(best['C5']), 4)
     }])
     return res_df
 
