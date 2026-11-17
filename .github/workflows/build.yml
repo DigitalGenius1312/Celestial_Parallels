@@ -31,9 +31,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-
+    
     - name: Build Executable with PyInstaller
-      run: pyinstaller --noconsole --onedir --name "Celestial Parallels" --add-data "Master_Suitability_S.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C1.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C2.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C3.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C4.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C5.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "index.html${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "style.css${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "app.js${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "logo.png${{ matrix.os == 'windows-latest' && ';' || ':' }}." desktop_app.py
+      run: pyinstaller --noconsole --onedir --name "Celestial Parallels" --icon="logo.png" --add-data "Master_Suitability_S.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C1.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C2.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C3.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C4.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "C5.csv${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "index.html${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "style.css${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "app.js${{ matrix.os == 'windows-latest' && ';' || ':' }}." --add-data "logo.png${{ matrix.os == 'windows-latest' && ';' || ':' }}." desktop_app.py
 
     - name: Zip Build Folder (Linux/macOS)
       if: runner.os != 'Windows'
