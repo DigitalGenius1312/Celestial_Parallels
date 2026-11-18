@@ -70,7 +70,7 @@
             <div id="presetLocationsList"></div>
         </div>
 
-<!-- EARTH ANALOG MATCH RESULT SIDE PANEL -->
+        <!-- EARTH ANALOG MATCH RESULT SIDE PANEL -->
         <div id="analogResultPanel" class="hidden">
             <div class="panel-header">
                 <h3>Earth Analog Match</h3>
@@ -174,6 +174,12 @@
                 </div>
 
                 <button id="recenterMatchBtn" class="action-btn full-width-btn" onclick="recenterOnLastMatch()">Re-center on Match</button>
+
+                <!-- Export Mission Brief Actions -->
+                <div class="export-actions">
+                    <button id="exportCsvBtn" class="export-btn" onclick="exportMissionCSV()">Export CSV (GIS)</button>
+                    <button id="exportReportBtn" class="export-btn primary-export" onclick="exportMissionBrief()">Mission Brief (PDF)</button>
+                </div>
             </div>
         </div>
         

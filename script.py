@@ -8,6 +8,8 @@ import pandas as pd
 import os
 import sys
 import threading
+import urllib.request
+import json
 
 def get_resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
@@ -76,6 +78,14 @@ FEATURE_GROUPS = {
     'C5': ['u_dust', 'u_wind', 'u_erosion']
 }
 ALL_FEATURE_COLS = [c for cols in FEATURE_GROUPS.values() for c in cols]
+RAW_FEATURE_COLS = [
+    'g1_silicate', 'g2_basalt', 'g3_iron_oxide', 'g4_plagioclase',
+    'g5_igneous', 'g6_sedimentary', 'g7_metamorphic', 'g8_regolith',
+    'u_elevation', 'u_slope', 'u_roughness', 'u_crater',
+    'z_Tmean', 'z_Trange', 'z_illum',
+    'u_ice', 'u_depth', 'u_permafrost', 'u_hydration',
+    'u_dust', 'u_wind', 'u_erosion'
+]
 CATEGORY_WEIGHTS = {'C1': 0.20, 'C2': 0.25, 'C3': 0.20, 'C4': 0.20, 'C5': 0.15}
 
 # Precompute shrunk inverse covariance matrices
@@ -252,6 +262,12 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
     )
     final_error = round(min(error_km, 10.0), 2)
     
+    target_raw_vec, _ = bilinear_interpolate_point(BODY_GRIDS[target_body_cap], target_lat, norm_lon, RAW_FEATURE_COLS)
+    earth_raw_vec, _ = bilinear_interpolate_point(BODY_GRIDS['Earth'], pin_lat, pin_lon, RAW_FEATURE_COLS)
+
+    target_raw_dict = {col: round(float(val), 4) for col, val in zip(RAW_FEATURE_COLS, target_raw_vec)}
+    earth_raw_dict = {col: round(float(val), 4) for col, val in zip(RAW_FEATURE_COLS, earth_raw_vec)}
+
     res_df = pd.DataFrame([{
         'body': 'Earth',
         'lat': pin_lat,
@@ -263,7 +279,9 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
         'C3': round(float(best['C3']), 4),
         'C4': round(float(best['C4']), 4),
         'C5': round(float(best['C5']), 4),
-        'sub_scores': sub_scores_dict
+        'sub_scores': sub_scores_dict,
+        'target_raw': target_raw_dict,
+        'earth_raw': earth_raw_dict
     }])
     return res_df
 
@@ -289,6 +307,29 @@ def read_status():
         "message": "Planetary Analog Pipeline API is running!",
         "docs": "Visit http://localhost:8000/docs for interactive API testing."
     }
+
+@app.get("/api/placename")
+def get_place_name(lat: float, lon: float):
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=8"
+        req = urllib.request.Request(
+            url,
+            headers={
+                'User-Agent': 'CelestialParallels/1.0 (Research Mission Brief)',
+                'Accept-Language': 'en'  # Forces OpenStreetMap to return English names
+            }
+        )
+        with urllib.request.urlopen(req, timeout=4) as response:
+            data = json.loads(response.read().decode())
+            if 'address' in data:
+                addr = data['address']
+                region = addr.get('city') or addr.get('town') or addr.get('county') or addr.get('state') or addr.get('region') or ""
+                country = addr.get('country') or ""
+                formatted = ", ".join([p for p in [region, country] if p])
+                return {"place": formatted or data.get('display_name', "Remote Terrestrial Region")}
+            return {"place": data.get('display_name', "Remote Terrestrial Region")}
+    except Exception as e:
+        return {"place": "Remote Terrestrial Region"}
     
 @app.post("/api/pinpoint")
 def calculate_pinpoint(req: LocationRequest):
@@ -306,7 +347,9 @@ def calculate_pinpoint(req: LocationRequest):
             "C4": float(best['C4']),
             "C5": float(best['C5'])
         },
-        "sub_scores": best['sub_scores']
+        "sub_scores": best['sub_scores'],
+        "target_raw": best.get('target_raw', {}),
+        "earth_raw": best.get('earth_raw', {})
     }
 
 last_heartbeat = time.time()
