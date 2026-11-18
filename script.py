@@ -9,6 +9,7 @@ import os
 import sys
 import threading
 import urllib.request
+from typing import Optional, Dict
 import json
 
 def get_resource_path(relative_path):
@@ -154,7 +155,8 @@ def bilinear_interpolate_point(body_grid_df, lat, lon, feature_cols):
     grad_y = np.linalg.norm((v01 - v00 + v11 - v10) / 2.0)
     return interp_vec, np.sqrt(grad_x**2 + grad_y**2)
 
-def vectorized_score_vectors(X_candidates, ref_vec, local_grads=None):
+def vectorized_score_vectors(X_candidates, ref_vec, local_grads=None, custom_weights=None):
+    weights = custom_weights if custom_weights else CATEGORY_WEIGHTS
     cat_scores = {}
     col_offset = 0
     S_total = np.zeros(len(X_candidates))
@@ -172,16 +174,16 @@ def vectorized_score_vectors(X_candidates, ref_vec, local_grads=None):
         gamma = 1.0 / (2.0 * k)
         cat_score = np.exp(-gamma * mahal_sq) * e_cov * e_geo
         cat_scores[cat] = cat_score
-        S_total += cat_score * CATEGORY_WEIGHTS[cat]
+        S_total += cat_score * weights.get(cat, CATEGORY_WEIGHTS[cat])
         col_offset += k
     return S_total, cat_scores
 
-def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
+def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5, custom_weights=None):
     target_body_cap = target_body.capitalize()
     norm_lon = normalize_longitude(target_lon)
     
     ref_vec, _ = bilinear_interpolate_point(BODY_GRIDS[target_body_cap], target_lat, norm_lon, ALL_FEATURE_COLS)
-    macro_S, _ = vectorized_score_vectors(X_earth, ref_vec)
+    macro_S, _ = vectorized_score_vectors(X_earth, ref_vec, custom_weights=custom_weights)
     earth_active['macro_S'] = macro_S
     
     best_macro = earth_active.sort_values(by='macro_S', ascending=False).iloc[0]
@@ -217,14 +219,15 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
         res_fallback = pd.DataFrame([{
             'body': 'Earth', 'lat': c_lat, 'lon': c_lon, 'S_refined': best_macro['macro_S'],
             'grid_res_km': 1.11, 'pinpoint_error_km': 5.0,
-            'C1': 0.0, 'C2': 0.0, 'C3': 0.0, 'C4': 0.0, 'C5': 0.0, 'sub_scores': {}
+            'C1': 0.0, 'C2': 0.0, 'C3': 0.0, 'C4': 0.0, 'C5': 0.0, 'sub_scores': {},
+            'target_raw': {}, 'earth_raw': {}
         }])
         res_fallback.index = [1]
         return res_fallback
 
     X_sub = np.array(local_df['vec'].tolist())
     grads = np.array(local_df['grad'].tolist())
-    S_sub, cat_sub = vectorized_score_vectors(X_sub, ref_vec, local_grads=grads)
+    S_sub, cat_sub = vectorized_score_vectors(X_sub, ref_vec, local_grads=grads, custom_weights=custom_weights)
     local_df['S_refined'] = S_sub
 
     for cat in ['C1', 'C2', 'C3', 'C4', 'C5']:
@@ -251,6 +254,12 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
         for col, val in zip(ALL_FEATURE_COLS, sub_sim_vals)
     }
 
+    target_raw_vec, _ = bilinear_interpolate_point(BODY_GRIDS[target_body_cap], target_lat, norm_lon, RAW_FEATURE_COLS)
+    earth_raw_vec, _ = bilinear_interpolate_point(BODY_GRIDS['Earth'], pin_lat, pin_lon, RAW_FEATURE_COLS)
+
+    target_raw_dict = {col: round(float(val), 4) for col, val in zip(RAW_FEATURE_COLS, target_raw_vec)}
+    earth_raw_dict = {col: round(float(val), 4) for col, val in zip(RAW_FEATURE_COLS, earth_raw_vec)}
+
     d_shift_km = haversine_km(raw_lat, raw_lon, pin_lat, pin_lon)
     top_plateau = valid[valid['S_refined'] >= 0.99 * best['S_refined']]
     plateau_spread_km = np.sqrt(len(top_plateau)) * best['grid_res_km'] * 0.5
@@ -262,12 +271,6 @@ def two_step_pinpoint_analogs(target_body, target_lat, target_lon, top_n=5):
     )
     final_error = round(min(error_km, 10.0), 2)
     
-    target_raw_vec, _ = bilinear_interpolate_point(BODY_GRIDS[target_body_cap], target_lat, norm_lon, RAW_FEATURE_COLS)
-    earth_raw_vec, _ = bilinear_interpolate_point(BODY_GRIDS['Earth'], pin_lat, pin_lon, RAW_FEATURE_COLS)
-
-    target_raw_dict = {col: round(float(val), 4) for col, val in zip(RAW_FEATURE_COLS, target_raw_vec)}
-    earth_raw_dict = {col: round(float(val), 4) for col, val in zip(RAW_FEATURE_COLS, earth_raw_vec)}
-
     res_df = pd.DataFrame([{
         'body': 'Earth',
         'lat': pin_lat,
@@ -299,6 +302,7 @@ class LocationRequest(BaseModel):
     body: str
     lat: float
     lon: float
+    weights: Optional[Dict[str, float]] = None
 
 @app.get("/api/status")
 def read_status():
@@ -333,7 +337,7 @@ def get_place_name(lat: float, lon: float):
     
 @app.post("/api/pinpoint")
 def calculate_pinpoint(req: LocationRequest):
-    result_df = two_step_pinpoint_analogs(req.body, req.lat, req.lon, top_n=1)
+    result_df = two_step_pinpoint_analogs(req.body, req.lat, req.lon, top_n=1, custom_weights=req.weights)
     best = result_df.iloc[0]
     return {
         "earth_lat": float(best['lat']),

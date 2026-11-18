@@ -141,8 +141,8 @@ async function processEarthLocation(name, lat, lon) {
     overlay.classList.remove('hidden');
 
     const sourceBodyName = currentBody.charAt(0).toUpperCase() + currentBody.slice(1);
+    const activeWeights = getActiveWeights(); // Capture exact active weights
 
-    // Dynamic progress messages sequence
     const progressMessages = [
         `Analyzing coordinates for ${name}...`,
         "Finding the best locations...",
@@ -161,20 +161,19 @@ async function processEarthLocation(name, lat, lon) {
     }, 750);
 
     try {
-        // 1. Send coordinates via POST to FastAPI server
         const response = await fetch('/api/pinpoint', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                body: currentBody, // Passes 'mars' or 'moon' dynamically
+                body: currentBody,
                 lat: lat,
-                lon: lon
+                lon: lon,
+                weights: activeWeights
             })
         });
 
         if (!response.ok) throw new Error("Failed to compute planetary analog location.");
 
-        // 2. Retrieve computed results from Python
         const data = await response.json();
         const derivedLat = data.earth_lat;
         const derivedLon = data.earth_lon;
@@ -183,14 +182,11 @@ async function processEarthLocation(name, lat, lon) {
         clearInterval(textInterval);
         loadingText.innerText = "Switching viewport to Earth match...";
 
-        // 3. Switch viewer globe to Earth automatically
         await switchBody('earth', document.querySelector('.planet-btn'));
 
-        // 4. Calculate proper zoom altitude based on error radius (framing the error circle cleanly)
         const radiusMeters = errorRadiusKm * 1000;
         const cameraHeight = Math.max(radiusMeters * 10, 15000);
         
-        // Store comprehensive match report object for export & re-centering
         lastMatch = {
             targetName: name,
             targetBody: sourceBodyName,
@@ -208,23 +204,21 @@ async function processEarthLocation(name, lat, lon) {
             sub_scores: data.sub_scores || {},
             target_raw: data.target_raw || {},
             earth_raw: data.earth_raw || {},
+            weightsUsed: activeWeights,
             timestamp: new Date().toISOString()
         };
 
         document.getElementById('recenterMatchBtn').onclick = recenterOnLastMatch;
         
-        // 5. Fly the Cesium camera to the calculated Earth coordinates and zoom in appropriately
         viewer.camera.flyTo({
             destination: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat, cameraHeight),
             duration: 2.5
         });
 
-        // 6. Clear previous error boundary circles
         viewer.entities.values.forEach(entity => {
             if (entity.ellipse) viewer.entities.remove(entity);
         });
 
-        // 7. Draw the precise pinpoint error radius circle on Earth
         viewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat),
             ellipse: {
@@ -236,14 +230,19 @@ async function processEarthLocation(name, lat, lon) {
             }
         });
 
-        // 8. Populate and display the Earth Analog Match Side Panel
         document.getElementById('resultSourceTarget').innerText = `Analog for ${name} (${sourceBodyName}: ${lat}°, ${lon}°)`;
         document.getElementById('resultLat').innerText = `${derivedLat.toFixed(4)}°`;
         document.getElementById('resultLon').innerText = `${derivedLon.toFixed(4)}°`;
         document.getElementById('resultScore').innerText = data.S_score ? `${(data.S_score * 100).toFixed(1)}%` : "N/A";
         document.getElementById('resultError').innerText = `±${errorRadiusKm} km`;
 
-        // Update C1 - C5 parameter breakdown bars
+        // Dynamically update weight tag display in the result panel with exact weights used
+        document.getElementById('weightTagC1').innerText = `${Math.round(activeWeights.C1 * 100)}%`;
+        document.getElementById('weightTagC2').innerText = `${Math.round(activeWeights.C2 * 100)}%`;
+        document.getElementById('weightTagC3').innerText = `${Math.round(activeWeights.C3 * 100)}%`;
+        document.getElementById('weightTagC4').innerText = `${Math.round(activeWeights.C4 * 100)}%`;
+        document.getElementById('weightTagC5').innerText = `${Math.round(activeWeights.C5 * 100)}%`;
+
         if (data.cat_scores) {
             ['C1', 'C2', 'C3', 'C4', 'C5'].forEach(cat => {
                 const pct = ((data.cat_scores[cat] || 0) * 100).toFixed(1);
@@ -252,7 +251,6 @@ async function processEarthLocation(name, lat, lon) {
             });
         }
 
-        // Populate all 22 sub-parameter match percentages
         if (data.sub_scores) {
             document.querySelectorAll('[data-feat]').forEach(el => {
                 const key = el.getAttribute('data-feat');
@@ -275,6 +273,56 @@ async function processEarthLocation(name, lat, lon) {
         clearInterval(textInterval);
         overlay.classList.add('hidden');
     }
+}
+
+// Sync slider readouts and auto-normalize weights to sum to 1.0 (100%)
+function getActiveWeights() {
+    const rawC1 = parseFloat(document.getElementById('weightC1').value) || 0;
+    const rawC2 = parseFloat(document.getElementById('weightC2').value) || 0;
+    const rawC3 = parseFloat(document.getElementById('weightC3').value) || 0;
+    const rawC4 = parseFloat(document.getElementById('weightC4').value) || 0;
+    const rawC5 = parseFloat(document.getElementById('weightC5').value) || 0;
+
+    const total = rawC1 + rawC2 + rawC3 + rawC4 + rawC5;
+    if (total === 0) return { C1: 0.2, C2: 0.25, C3: 0.2, C4: 0.2, C5: 0.15 };
+
+    return {
+        C1: rawC1 / total,
+        C2: rawC2 / total,
+        C3: rawC3 / total,
+        C4: rawC4 / total,
+        C5: rawC5 / total
+    };
+}
+
+function updateWeightsFromSliders() {
+    const rawC1 = parseFloat(document.getElementById('weightC1').value) || 0;
+    const rawC2 = parseFloat(document.getElementById('weightC2').value) || 0;
+    const rawC3 = parseFloat(document.getElementById('weightC3').value) || 0;
+    const rawC4 = parseFloat(document.getElementById('weightC4').value) || 0;
+    const rawC5 = parseFloat(document.getElementById('weightC5').value) || 0;
+    const total = rawC1 + rawC2 + rawC3 + rawC4 + rawC5 || 1;
+
+    document.getElementById('valC1').innerText = `${Math.round((rawC1 / total) * 100)}%`;
+    document.getElementById('valC2').innerText = `${Math.round((rawC2 / total) * 100)}%`;
+    document.getElementById('valC3').innerText = `${Math.round((rawC3 / total) * 100)}%`;
+    document.getElementById('valC4').innerText = `${Math.round((rawC4 / total) * 100)}%`;
+    document.getElementById('valC5').innerText = `${Math.round((rawC5 / total) * 100)}%`;
+}
+
+function applyWeightPreset(presetName) {
+    const weights = {
+        default: { C1: 20, C2: 25, C3: 20, C4: 20, C5: 15 },
+        rover:   { C1: 10, C2: 40, C3: 15, C4: 10, C5: 25 },
+        isru:    { C1: 15, C2: 15, C3: 20, C4: 40, C5: 10 }
+    };
+    const p = weights[presetName] || weights.default;
+    document.getElementById('weightC1').value = p.C1;
+    document.getElementById('weightC2').value = p.C2;
+    document.getElementById('weightC3').value = p.C3;
+    document.getElementById('weightC4').value = p.C4;
+    document.getElementById('weightC5').value = p.C5;
+    updateWeightsFromSliders();
 }
 
 // --- PLANETARY DATA ---
@@ -814,5 +862,53 @@ function exportMissionBrief() {
         printWindow.document.close();
     } else {
         alert("Please allow pop-ups in your browser to view and print the Mission Brief PDF.");
+    }
+}
+// Toggle Side-by-Side Comparison Modal
+function toggleComparisonModal() {
+    const modal = document.getElementById('comparisonModal');
+    if (!modal) return;
+    
+    if (modal.classList.contains('hidden')) {
+        populateComparisonTable();
+        modal.classList.remove('hidden');
+    } else {
+        modal.classList.add('hidden');
+    }
+}
+
+// Populate the comparison table with raw physical measurements
+function populateComparisonTable() {
+    if (!lastMatch) return;
+    const m = lastMatch;
+    
+    document.getElementById('targetColHeader').innerText = `${m.targetBody} Target Value`;
+    document.getElementById('comparisonSubtitle').innerText = 
+        `${m.targetName} (${m.targetBody}: ${m.targetLat.toFixed(2)}°, ${m.targetLon.toFixed(2)}°) vs. ${m.earthPlaceName} (Earth)`;
+
+    const tbody = document.getElementById('comparisonTableBody');
+    tbody.innerHTML = '';
+
+    PARAMETER_CATALOG.forEach(p => {
+        const tVal = m.target_raw[p.rawKey] !== undefined ? Number(m.target_raw[p.rawKey]).toFixed(4) : "N/A";
+        const eVal = m.earth_raw[p.rawKey] !== undefined ? Number(m.earth_raw[p.rawKey]).toFixed(4) : "N/A";
+        const sim = m.sub_scores[p.scoreKey] !== undefined ? `${(m.sub_scores[p.scoreKey] * 100).toFixed(1)}%` : "N/A";
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${p.cat.split(":")[0]}</td>
+            <td>${p.label}</td>
+            <td>${tVal} <span class="unit">${p.unit}</span></td>
+            <td>${eVal} <span class="unit">${p.unit}</span></td>
+            <td><strong>${sim}</strong></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+// Toggle Weights Modal Dialog
+function toggleWeightsModal() {
+    const modal = document.getElementById('weightsModal');
+    if (modal) {
+        modal.classList.toggle('hidden');
     }
 }

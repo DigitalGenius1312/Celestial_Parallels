@@ -39,7 +39,10 @@
         <div id="parametersPanel" class="hidden">
             <div class="panel-header">
                 <h3>Custom Locations</h3>
-                <button id="toggleParamsBtn" onclick="toggleParamsDrawer()">Expand Form</button>
+                <div class="panel-header-actions">
+                    <button id="openWeightsModalBtn" class="icon-gear-btn" onclick="toggleWeightsModal()" title="Tune Mission Weights">⚙️ Weights</button>
+                    <button id="toggleParamsBtn" onclick="toggleParamsDrawer()">Expand Form</button>
+                </div>
             </div>
             <form id="planetaryForm" class="params-form collapsed" onsubmit="handleParamSubmit(event)">
                 <div class="form-grid">
@@ -60,6 +63,7 @@
                     <button type="submit" class="action-btn">Add Location</button>
                 </div>
             </form>
+            
             <!-- Saved Location Blocks Container -->
             <div id="savedLocationsList"></div>
 
@@ -70,14 +74,85 @@
             <div id="presetLocationsList"></div>
         </div>
 
+        <!-- SEPARATE TOGGLEABLE DIALOG BOX FOR MISSION WEIGHTS & SLIDERS -->
+        <div id="weightsModal" class="page-overlay hidden">
+            <div class="overlay-card weights-modal-card">
+                <div class="modal-header">
+                    <h2>Mission Tuning Weights &amp; Parameters</h2>
+                    <button class="panel-close-link" onclick="toggleWeightsModal()">&times;</button>
+                </div>
+                <p class="modal-subtitle">Customize environmental constraints based on your spacecraft, rover, or instrument architecture.</p>
+                
+                <div class="mission-presets">
+                    <button type="button" class="preset-pill" onclick="applyWeightPreset('default')">Default Profile</button>
+                    <button type="button" class="preset-pill" onclick="applyWeightPreset('rover')">Rover Mobility Test</button>
+                    <button type="button" class="preset-pill" onclick="applyWeightPreset('isru')">ISRU / Ice Drilling</button>
+                </div>
+                
+                <div class="weight-sliders-container">
+                    <div class="weight-slider-group">
+                        <div class="weight-label-row">
+                            <span>C1: Mineralogy &amp; Geochemistry</span>
+                            <span id="valC1">20%</span>
+                        </div>
+                        <input type="range" id="weightC1" min="0" max="100" value="20" oninput="updateWeightsFromSliders()">
+                        <p class="weight-hint"><strong>High:</strong> Geochemical sampling, rock weathering &amp; regolith composition studies. <strong>Low:</strong> Pure mechanical/civil engineering tests.</p>
+                    </div>
+                    
+                    <div class="weight-slider-group">
+                        <div class="weight-label-row">
+                            <span>C2: Topography &amp; Slope</span>
+                            <span id="valC2">25%</span>
+                        </div>
+                        <input type="range" id="weightC2" min="0" max="100" value="25" oninput="updateWeightsFromSliders()">
+                        <p class="weight-hint"><strong>High:</strong> Rover suspension, slope traversal, boulder field &amp; crater steepness. <strong>Low:</strong> Flat-plain atmospheric landing tests.</p>
+                    </div>
+
+                    <div class="weight-slider-group">
+                        <div class="weight-label-row">
+                            <span>C3: Thermal Properties</span>
+                            <span id="valC3">20%</span>
+                        </div>
+                        <input type="range" id="weightC3" min="0" max="100" value="20" oninput="updateWeightsFromSliders()">
+                        <p class="weight-hint"><strong>High:</strong> Thermal blanket stress, diurnal temperature cycling on electronics. <strong>Low:</strong> Subsurface-only or equatorial operations.</p>
+                    </div>
+
+                    <div class="weight-slider-group">
+                        <div class="weight-label-row">
+                            <span>C4: Subsurface Resources</span>
+                            <span id="valC4">20%</span>
+                        </div>
+                        <input type="range" id="weightC4" min="0" max="100" value="20" oninput="updateWeightsFromSliders()">
+                        <p class="weight-hint"><strong>High:</strong> Ice mining, permafrost drilling, water resource extraction. <strong>Low:</strong> Dry highland surface sorties.</p>
+                    </div>
+
+                    <div class="weight-slider-group">
+                        <div class="weight-label-row">
+                            <span>C5: Eolian Dynamics</span>
+                            <span id="valC5">15%</span>
+                        </div>
+                        <input type="range" id="weightC5" min="0" max="100" value="15" oninput="updateWeightsFromSliders()">
+                        <p class="weight-hint"><strong>High:</strong> Dust accumulation on solar arrays, dune migration dynamics. <strong>Low:</strong> Rocky, wind-protected bedrock regions.</p>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="action-btn" onclick="toggleWeightsModal()">Apply &amp; Close</button>
+                </div>
+            </div>
+        </div>
+
         <!-- EARTH ANALOG MATCH RESULT SIDE PANEL -->
         <div id="analogResultPanel" class="hidden">
-            <div class="panel-header">
+            <div class="panel-card-header">
                 <h3>Earth Analog Match</h3>
+                <button class="panel-close-link" onclick="document.getElementById('analogResultPanel').classList.add('hidden')">&times;</button>
             </div>
+            
             <div class="result-body">
                 <div id="resultPlaceName" class="result-place">Identifying region...</div>
                 <div id="resultSourceTarget" class="result-subtext"></div>
+                
                 <div class="result-metrics">
                     <div class="metric-box">
                         <span class="metric-label">Latitude</span>
@@ -88,7 +163,7 @@
                         <span class="metric-value" id="resultLon">--</span>
                     </div>
                     <div class="metric-box">
-                        <span class="metric-label">Similarity (S)</span>
+                        <span class="metric-label">Suitability (S)</span>
                         <span class="metric-value" id="resultScore">--</span>
                     </div>
                     <div class="metric-box">
@@ -96,13 +171,14 @@
                         <span class="metric-value" id="resultError">--</span>
                     </div>
                 </div>
-                <!-- Parameter Breakdown (C1 - C5) with Live Sub-Parameter Match % -->
+
+                <!-- Parameter Breakdown with Exact Weights & Sub-Params -->
                 <div class="param-breakdown">
-                    <div class="breakdown-title">Parameter Similarity &amp; Weights <span class="hint-text">(Hover or click)</span></div>
+                    <div class="breakdown-title">Category Similarity &amp; Active Weights <span class="hint-text">(Click row to expand)</span></div>
                     
                     <div class="param-row" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
-                            <span>Mineralogy (C1 <small class="weight-tag">20%</small>)</span>
+                            <span>Mineralogy (C1 <small class="weight-tag" id="weightTagC1">20%</small>)</span>
                             <span id="scoreC1">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC1" class="param-bar-fill"></div></div>
@@ -120,7 +196,7 @@
 
                     <div class="param-row" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
-                            <span>Topography (C2 <small class="weight-tag">25%</small>)</span>
+                            <span>Topography (C2 <small class="weight-tag" id="weightTagC2">25%</small>)</span>
                             <span id="scoreC2">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC2" class="param-bar-fill"></div></div>
@@ -134,7 +210,7 @@
 
                     <div class="param-row" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
-                            <span>Thermal Properties (C3 <small class="weight-tag">20%</small>)</span>
+                            <span>Thermal (C3 <small class="weight-tag" id="weightTagC3">20%</small>)</span>
                             <span id="scoreC3">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC3" class="param-bar-fill"></div></div>
@@ -147,7 +223,7 @@
 
                     <div class="param-row" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
-                            <span>Subsurface Resources (C4 <small class="weight-tag">20%</small>)</span>
+                            <span>Subsurface (C4 <small class="weight-tag" id="weightTagC4">20%</small>)</span>
                             <span id="scoreC4">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC4" class="param-bar-fill"></div></div>
@@ -161,7 +237,7 @@
 
                     <div class="param-row" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
-                            <span>Eolian Dynamics (C5 <small class="weight-tag">15%</small>)</span>
+                            <span>Eolian (C5 <small class="weight-tag" id="weightTagC5">15%</small>)</span>
                             <span id="scoreC5">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC5" class="param-bar-fill"></div></div>
@@ -173,7 +249,9 @@
                     </div>
                 </div>
 
+                <!-- Action & Comparison Buttons -->
                 <button id="recenterMatchBtn" class="action-btn full-width-btn" onclick="recenterOnLastMatch()">Re-center on Match</button>
+                <button class="action-btn full-width-btn secondary-btn" onclick="toggleComparisonModal()">View Raw Parameter Comparison</button>
 
                 <!-- Export Mission Brief Actions -->
                 <div class="export-actions">
@@ -198,22 +276,22 @@
         <div id="cesiumContainer"></div>
     </main>
 
-    <!-- HOW TO USE SECTION -->
+<!-- HOW TO USE SECTION -->
     <section id="howtoSection" class="page-overlay hidden">
-        <div class="overlay-card">
+        <div class="overlay-card howto-card">
             <h2>How to Use This Tool</h2>
             <div class="guide-grid">
                 <div class="guide-item">
                     <h3>1. Switch &amp; Navigate Worlds</h3>
-                    <p>Use the top menu switcher to jump between Earth, Mars, and the Moon. On Earth, hold down the middle mouse button (scroll wheel) and drag to rotate along the Z-axis, allowing you to tilt the camera into a traditional ground-level perspective.</p>
+                    <p>Use the top menu switcher to jump between Earth, Mars, and the Moon. On Earth, hold down the middle mouse button (scroll wheel) and drag to rotate along the Z-axis, allowing you to tilt the camera into a traditional ground-level perspective. On Mars or the Moon, double-click or right-click anywhere on the 3D globe to auto-fill coordinates.</p>
                 </div>
                 <div class="guide-item">
-                    <h3>2. Custom &amp; Preset Locations</h3>
-                    <p>When viewing Mars or the Moon, use the right sidebar panel to select from default preset locations of famous landmarks and bases, or input custom latitude, longitude, and location names. North and East values are positive whereas South and West values are negative.</p>
+                    <h3>2. Custom Locations &amp; Weights</h3>
+                    <p>When viewing Mars or the Moon, use the right sidebar panel to select from default preset locations of famous landmarks and bases, or input custom latitude, longitude, and location names (North and East are positive; South and West are negative). Click the Weights button in the panel header to adjust category importance or apply mission profiles like Rover Mobility and ISRU Drilling.</p>
                 </div>
                 <div class="guide-item">
-                    <h3>3. Find Earth Matches</h3>
-                    <p>Run the algorithm on your selected locations to pinpoint analog coordinates, percentage match, and error radii on Earth. Hover over or click any C1–C5 parameter bar to inspect individual sub-parameter similarity scores, or use Re-center on Match after navigating elsewhere.</p>
+                    <h3>3. Find, Compare &amp; Export Matches</h3>
+                    <p>Run the algorithm on your selected locations to pinpoint analog coordinates, percentage match, and error radii on Earth. Hover over or click any C1–C5 parameter bar to inspect individual sub-parameter scores, open the Raw Parameter Comparison table to verify physical measurements, or export your findings as GIS CSVs and formatted Mission Brief PDFs.</p>
                 </div>
             </div>
             <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Back to Globe</button>
@@ -247,5 +325,31 @@
     </div>
 
     <script src="app.js"></script>
+
+    <!-- Side-by-Side Comparison Modal -->
+    <div id="comparisonModal" class="page-overlay hidden">
+        <div class="overlay-card comparison-card">
+            <h2>Target vs. Earth Physical Comparison</h2>
+            <p id="comparisonSubtitle" class="result-subtext">Side-by-side physical measurements and property breakdown.</p>
+            <div class="table-scroll-container">
+                <table id="comparisonTable">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Parameter</th>
+                            <th id="targetColHeader">Target Value</th>
+                            <th>Earth Analog Value</th>
+                            <th>Match %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparisonTableBody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            <button class="action-btn" onclick="toggleComparisonModal()">Close Comparison</button>
+        </div>
+    </div>
+
 </body>
 </html>
