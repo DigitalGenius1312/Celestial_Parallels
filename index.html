@@ -142,13 +142,18 @@
             </div>
         </div>
 
-        <!-- EARTH ANALOG MATCH RESULT SIDE PANEL -->
+<!-- EARTH ANALOG MATCH RESULT SIDE PANEL -->
         <div id="analogResultPanel" class="hidden">
             <div class="panel-card-header">
-                <h3>Earth Analog Match</h3>
+                <h3>Earth Analog Candidates</h3>
                 <button class="panel-close-link" onclick="document.getElementById('analogResultPanel').classList.add('hidden')">&times;</button>
             </div>
             
+            <!-- Candidate Rank Selector Tabs (#1, #2, #3, #4, #5) -->
+            <div id="candidateTabsContainer" class="candidate-tabs-bar">
+                <!-- Populated dynamically -->
+            </div>
+
             <div class="result-body">
                 <div id="resultPlaceName" class="result-place">Identifying region...</div>
                 <div id="resultSourceTarget" class="result-subtext"></div>

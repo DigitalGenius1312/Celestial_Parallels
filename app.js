@@ -10,6 +10,9 @@ let customLocations = {
     moon: []
 };
 
+let allCandidates = [];
+let currentCandidateIndex = 0;
+
 let globeClickHandler = null;
 
 // Explicit custom ellipsoids compatible with CesiumJS v1.115
@@ -149,7 +152,7 @@ async function processEarthLocation(name, lat, lon) {
         "Querying CSV feature groups & covariance matrices...",
         "Executing two-stage pinpoint pipeline...",
         "Filtering subaerial land and calculating error radius...",
-        "Finalizing Earth analog match..."
+        "Finalizing Top-N Earth analog matches..."
     ];
 
     let msgIndex = 0;
@@ -172,99 +175,22 @@ async function processEarthLocation(name, lat, lon) {
             })
         });
 
-        if (!response.ok) throw new Error("Failed to compute planetary analog location.");
+        if (!response.ok) throw new Error("Failed to compute planetary analog locations.");
 
         const data = await response.json();
-        const derivedLat = data.earth_lat;
-        const derivedLon = data.earth_lon;
-        const errorRadiusKm = data.error_km;
+        
+        // Store all candidates returned from Python backend
+        allCandidates = data.candidates || [];
+        if (allCandidates.length === 0) throw new Error("No analog candidates returned.");
 
         clearInterval(textInterval);
         loadingText.innerText = "Switching viewport to Earth match...";
 
         await switchBody('earth', document.querySelector('.planet-btn'));
 
-        const radiusMeters = errorRadiusKm * 1000;
-        const cameraHeight = Math.max(radiusMeters * 10, 15000);
-        
-        lastMatch = {
-            targetName: name,
-            targetBody: sourceBodyName,
-            targetBodyKey: sourceBodyName.toLowerCase(),
-            targetLat: lat,
-            targetLon: lon,
-            lat: derivedLat,
-            lon: derivedLon,
-            earthPlaceName: "Identifying location...",
-            radiusMeters: radiusMeters,
-            cameraHeight: cameraHeight,
-            errorKm: errorRadiusKm,
-            S_score: data.S_score,
-            cat_scores: data.cat_scores || {},
-            sub_scores: data.sub_scores || {},
-            target_raw: data.target_raw || {},
-            earth_raw: data.earth_raw || {},
-            weightsUsed: activeWeights,
-            timestamp: new Date().toISOString()
-        };
-
-        document.getElementById('recenterMatchBtn').onclick = recenterOnLastMatch;
-        
-        viewer.camera.flyTo({
-            destination: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat, cameraHeight),
-            duration: 2.5
-        });
-
-        viewer.entities.values.forEach(entity => {
-            if (entity.ellipse) viewer.entities.remove(entity);
-        });
-
-        viewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat),
-            ellipse: {
-                semiMajorAxis: radiusMeters,
-                semiMinorAxis: radiusMeters,
-                material: Cesium.Color.CYAN.withAlpha(0.35),
-                outline: true,
-                outlineColor: Cesium.Color.CYAN
-            }
-        });
-
-        document.getElementById('resultSourceTarget').innerText = `Analog for ${name} (${sourceBodyName}: ${lat}°, ${lon}°)`;
-        document.getElementById('resultLat').innerText = `${derivedLat.toFixed(4)}°`;
-        document.getElementById('resultLon').innerText = `${derivedLon.toFixed(4)}°`;
-        document.getElementById('resultScore').innerText = data.S_score ? `${(data.S_score * 100).toFixed(1)}%` : "N/A";
-        document.getElementById('resultError').innerText = `±${errorRadiusKm} km`;
-
-        // Dynamically update weight tag display in the result panel with exact weights used
-        document.getElementById('weightTagC1').innerText = `${Math.round(activeWeights.C1 * 100)}%`;
-        document.getElementById('weightTagC2').innerText = `${Math.round(activeWeights.C2 * 100)}%`;
-        document.getElementById('weightTagC3').innerText = `${Math.round(activeWeights.C3 * 100)}%`;
-        document.getElementById('weightTagC4').innerText = `${Math.round(activeWeights.C4 * 100)}%`;
-        document.getElementById('weightTagC5').innerText = `${Math.round(activeWeights.C5 * 100)}%`;
-
-        if (data.cat_scores) {
-            ['C1', 'C2', 'C3', 'C4', 'C5'].forEach(cat => {
-                const pct = ((data.cat_scores[cat] || 0) * 100).toFixed(1);
-                document.getElementById(`score${cat}`).innerText = `${pct}%`;
-                document.getElementById(`bar${cat}`).style.width = `${pct}%`;
-            });
-        }
-
-        if (data.sub_scores) {
-            document.querySelectorAll('[data-feat]').forEach(el => {
-                const key = el.getAttribute('data-feat');
-                const val = data.sub_scores[key];
-                el.innerText = val !== undefined ? `${(val * 100).toFixed(0)}%` : '--';
-            });
-        }
-      
-        document.getElementById('resultPlaceName').innerText = "Identifying location...";
-        document.getElementById('analogResultPanel').classList.remove('hidden');
-        
-        const placeName = await fetchEarthPlaceName(derivedLat, derivedLon);
-        document.getElementById('resultPlaceName').innerText = placeName;
-        if (lastMatch) lastMatch.earthPlaceName = placeName;
+        // Render rank selector tabs (#1, #2, #3, etc.) and select #1 by default
+        renderCandidateTabs();
+        await selectCandidate(0, name, sourceBodyName, lat, lon, activeWeights);
 
     } catch (error) {
         console.error("Error communicating with Python API:", error);
@@ -273,6 +199,119 @@ async function processEarthLocation(name, lat, lon) {
         clearInterval(textInterval);
         overlay.classList.add('hidden');
     }
+}
+
+// Render Rank #1, #2, #3, etc. tabs in the result panel
+function renderCandidateTabs() {
+    const container = document.getElementById('candidateTabsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    allCandidates.forEach((cand, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `cand-tab ${idx === currentCandidateIndex ? 'active' : ''}`;
+        btn.innerText = `#${idx + 1} (${(cand.S_refined * 100).toFixed(0)}%)`;
+        btn.onclick = () => switchCandidate(idx);
+        container.appendChild(btn);
+    });
+}
+
+// Switch between selected candidate ranks
+function switchCandidate(idx) {
+    if (idx < 0 || idx >= allCandidates.length) return;
+    currentCandidateIndex = idx;
+    renderCandidateTabs();
+    
+    const m = lastMatch;
+    if (m) {
+        selectCandidate(idx, m.targetName, m.targetBody, m.targetLat, m.targetLon, m.weightsUsed);
+    }
+}
+
+// Update camera, map overlay, metrics, and sub-parameters for the chosen candidate
+async function selectCandidate(idx, targetName, sourceBodyName, targetLat, targetLon, activeWeights) {
+    const cand = allCandidates[idx];
+    const derivedLat = cand.lat;
+    const derivedLon = cand.lon;
+    const errorRadiusKm = cand.pinpoint_error_km;
+    const radiusMeters = errorRadiusKm * 1000;
+    const cameraHeight = Math.max(radiusMeters * 10, 15000);
+
+    lastMatch = {
+        targetName: targetName,
+        targetBody: sourceBodyName,
+        targetBodyKey: sourceBodyName.toLowerCase(),
+        targetLat: targetLat,
+        targetLon: targetLon,
+        lat: derivedLat,
+        lon: derivedLon,
+        earthPlaceName: "Identifying location...",
+        radiusMeters: radiusMeters,
+        cameraHeight: cameraHeight,
+        errorKm: errorRadiusKm,
+        S_score: cand.S_refined,
+        cat_scores: cand,
+        sub_scores: cand.sub_scores,
+        target_raw: cand.target_raw,
+        earth_raw: cand.earth_raw,
+        weightsUsed: activeWeights
+    };
+
+    document.getElementById('recenterMatchBtn').onclick = recenterOnLastMatch;
+
+    viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat, cameraHeight),
+        duration: 2.0
+    });
+
+    viewer.entities.values.forEach(entity => {
+        if (entity.ellipse) viewer.entities.remove(entity);
+    });
+
+    viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(derivedLon, derivedLat),
+        ellipse: {
+            semiMajorAxis: radiusMeters,
+            semiMinorAxis: radiusMeters,
+            material: Cesium.Color.CYAN.withAlpha(0.35),
+            outline: true,
+            outlineColor: Cesium.Color.CYAN
+        }
+    });
+
+    document.getElementById('resultSourceTarget').innerText = `Analog for ${targetName} (${sourceBodyName}) — Rank #${idx + 1}`;
+    document.getElementById('resultLat').innerText = `${derivedLat.toFixed(4)}°`;
+    document.getElementById('resultLon').innerText = `${derivedLon.toFixed(4)}°`;
+    document.getElementById('resultScore').innerText = `${(cand.S_refined * 100).toFixed(1)}%`;
+    document.getElementById('resultError').innerText = `±${errorRadiusKm} km`;
+
+    // Update active weight badges in result panel
+    document.getElementById('weightTagC1').innerText = `${Math.round(activeWeights.C1 * 100)}%`;
+    document.getElementById('weightTagC2').innerText = `${Math.round(activeWeights.C2 * 100)}%`;
+    document.getElementById('weightTagC3').innerText = `${Math.round(activeWeights.C3 * 100)}%`;
+    document.getElementById('weightTagC4').innerText = `${Math.round(activeWeights.C4 * 100)}%`;
+    document.getElementById('weightTagC5').innerText = `${Math.round(activeWeights.C5 * 100)}%`;
+
+    ['C1', 'C2', 'C3', 'C4', 'C5'].forEach(cat => {
+        const pct = ((cand[cat] || 0) * 100).toFixed(1);
+        document.getElementById(`score${cat}`).innerText = `${pct}%`;
+        document.getElementById(`bar${cat}`).style.width = `${pct}%`;
+    });
+
+    if (cand.sub_scores) {
+        document.querySelectorAll('[data-feat]').forEach(el => {
+            const key = el.getAttribute('data-feat');
+            const val = cand.sub_scores[key];
+            el.innerText = val !== undefined ? `${(val * 100).toFixed(0)}%` : '--';
+        });
+    }
+
+    document.getElementById('resultPlaceName').innerText = "Identifying location...";
+    document.getElementById('analogResultPanel').classList.remove('hidden');
+
+    const placeName = await fetchEarthPlaceName(derivedLat, derivedLon);
+    document.getElementById('resultPlaceName').innerText = placeName;
+    if (lastMatch) lastMatch.earthPlaceName = placeName;
 }
 
 // Sync slider readouts and auto-normalize weights to sum to 1.0 (100%)
@@ -308,6 +347,21 @@ function updateWeightsFromSliders() {
     document.getElementById('valC3').innerText = `${Math.round((rawC3 / total) * 100)}%`;
     document.getElementById('valC4').innerText = `${Math.round((rawC4 / total) * 100)}%`;
     document.getElementById('valC5').innerText = `${Math.round((rawC5 / total) * 100)}%`;
+}
+
+function applyWeightPreset(presetName) {
+    const weights = {
+        default: { C1: 20, C2: 25, C3: 20, C4: 20, C5: 15 },
+        rover:   { C1: 10, C2: 40, C3: 15, C4: 10, C5: 25 },
+        isru:    { C1: 15, C2: 15, C3: 20, C4: 40, C5: 10 }
+    };
+    const p = weights[presetName] || weights.default;
+    document.getElementById('weightC1').value = p.C1;
+    document.getElementById('weightC2').value = p.C2;
+    document.getElementById('weightC3').value = p.C3;
+    document.getElementById('weightC4').value = p.C4;
+    document.getElementById('weightC5').value = p.C5;
+    updateWeightsFromSliders();
 }
 
 function applyWeightPreset(presetName) {
@@ -587,7 +641,6 @@ async function switchBody(bodyType, buttonElement) {
             viewer.scene.primitives.add(tileset);
             
         } else {
-            // Use custom ellipsoid mapping for the globe viewer itself
             Cesium.Ellipsoid.default = bodyType === 'mars' ? marsEllipsoid : moonEllipsoid;
             
             viewer = new Cesium.Viewer('cesiumContainer', {
@@ -606,14 +659,17 @@ async function switchBody(bodyType, buttonElement) {
             await viewer.flyTo(tileset);
 
             renderPresetLocations(bodyType);
-            renderSavedLocations(bodyType); // Body-specific saved locations
-            setupGlobeClickHandler();      // Click-anywhere coordinate picker handler
+            renderSavedLocations(bodyType);
+            setupGlobeClickHandler();
         }
     } catch (error) {
         console.error(`Error loading ${bodyType}:`, error);
-        alert(`Could not load ${bodyData[bodyType].title}. Verify your Cesium Ion token.`);
+        alert(`Could not load ${bodyData[bodyType].title}. Verify your Cesium Ion token or network connection.`);
     } finally {
-        overlay.classList.add('hidden');
+        // Ensure overlay always hides even if an asset takes a moment or encounters a minor hitch
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 300);
     }
 }
 
