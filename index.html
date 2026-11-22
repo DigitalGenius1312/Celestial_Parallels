@@ -4,6 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Celestial Parallels</title>
+    <meta name="description" content="Find geological analog sites between Earth, Mars and the Moon.">
+    <meta name="theme-color" content="#0f1317">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="logo.png">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
@@ -11,154 +16,119 @@
 </head>
 <body>
     <!-- Top Navigation Bar -->
-    <nav id="navbar">
+    <nav id="navbar" aria-label="Primary">
         <div class="nav-brand">
             <img src="logo.png" alt="Celestial Parallels" class="nav-logo">
             <span>Celestial Parallels</span>
         </div>
         <div class="nav-links">
-            <button class="nav-btn active" onclick="showSection('home', this)">Home</button>
-            <button class="nav-btn" onclick="showSection('howto', this)">How to Use</button>
+            <button class="nav-btn active" onclick="showSection('home', this)">Explorer</button>
+            <button class="nav-btn" onclick="showSection('howto', this)">How to use</button>
             <button class="nav-btn" onclick="showSection('about', this)">About</button>
         </div>
     </nav>
 
-    <!-- HOME SECTION (Active 3D Globe & Controls) -->
+    <!-- HOME SECTION -->
     <main id="homeSection">
-        <!-- Top Controls Container -->
+        <!-- Top Control Bar (Clean, single row layout) -->
         <div id="topControlsWrapper">
-            <!-- Planet Switcher -->
             <div id="menu">
-                <button class="planet-btn active" onclick="switchBody('earth', this)">Earth</button>
-                <button class="planet-btn" onclick="switchBody('mars', this)">Mars</button>
-                <button class="planet-btn" onclick="switchBody('moon', this)">Moon</button>
+                <button class="planet-btn active" data-body="earth" onclick="switchBody('earth', this)" title="Shortcut: 1">Earth</button>
+                <button class="planet-btn" data-body="mars" onclick="switchBody('mars', this)" title="Shortcut: 2">Mars</button>
+                <button class="planet-btn" data-body="moon" onclick="switchBody('moon', this)" title="Shortcut: 3">Moon</button>
+            </div>
+
+            <!-- Google Maps-style Search Bar (Earth Only) -->
+            <div id="geocoderSearchWrapper" class="geocoder-search-box">
+                <input type="text" id="geocoderInput" placeholder="Search a place on Earth" aria-label="Search a place on Earth" onkeydown="handleGeocoderKey(event)">
+                <button type="button" onclick="executePlaceSearch()">Search</button>
+            </div>
+
+            <!-- Reopen Match Button (Cleanly stacked next to search) -->
+            <div id="reopenResultsWrapper" class="hidden">
+                <button id="reopenResultsBtn" class="action-btn secondary-btn" onclick="toggleResultPanel()">Show last match</button>
             </div>
         </div>
 
-        <!-- LOCATION INPUT PANEL (Right Sidebar, only visible for Mars & Moon) -->
-        <div id="parametersPanel" class="hidden">
+        <!-- RIGHT SIDEBAR: SITE SELECTION -->
+        <div id="parametersPanel">
             <div class="panel-header">
-                <h3>Custom Locations</h3>
+                <div>
+                    <h3 id="sidebarTitle">Terrestrial Testbeds</h3>
+                    <p id="sidebarSubtitle" class="sidebar-sub">Project an Earth analog onto Mars or Moon</p>
+                </div>
                 <div class="panel-header-actions">
-                    <button id="openWeightsModalBtn" class="icon-gear-btn" onclick="toggleWeightsModal()" title="Tune Mission Weights">⚙️ Weights</button>
-                    <button id="toggleParamsBtn" onclick="toggleParamsDrawer()">Expand Form</button>
+                    <button id="openWeightsModalBtn" class="icon-gear-btn" onclick="toggleWeightsModal()" title="Set mission weights">Mission weights</button>
                 </div>
             </div>
-            <form id="planetaryForm" class="params-form collapsed" onsubmit="handleParamSubmit(event)">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Location Name</label>
-                        <input type="text" id="locNameInput" placeholder="e.g. Base neo" required>
+
+            <div class="search-filter-box">
+                <input type="text" id="siteSearchInput" placeholder="Filter sites" aria-label="Filter sites" oninput="filterLocationLists()">
+            </div>
+
+            <div class="custom-site-accordion">
+                <button type="button" id="toggleParamsBtn" class="accordion-toggle-btn" onclick="toggleParamsDrawer()">
+                    <span>Add a site by coordinates</span>
+                    <span id="drawerChevron">+</span>
+                </button>
+                <form id="planetaryForm" class="params-form collapsed" onsubmit="handleParamSubmit(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Site Name</label>
+                            <input type="text" id="locNameInput" placeholder="e.g. Devon Island Base" required>
+                        </div>
+                        <div class="form-row-dual">
+                            <div class="form-group">
+                                <label>Latitude (°)</label>
+                                <input type="number" step="0.0001" id="locLatInput" placeholder="75.38" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Longitude (°)</label>
+                                <input type="number" step="0.0001" id="locLonInput" placeholder="-89.85" required>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Latitude</label>
-                        <input type="number" step="0.0001" id="locLatInput" placeholder="e.g. 18.64" required>
+                    <div class="form-actions">
+                        <button type="submit" class="action-btn full-width-btn">Save Site</button>
                     </div>
-                    <div class="form-group">
-                        <label>Longitude</label>
-                        <input type="number" step="0.0001" id="locLonInput" placeholder="e.g. 133.64" required>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="action-btn">Add Location</button>
-                </div>
-            </form>
+                </form>
+            </div>
             
-            <!-- Saved Location Blocks Container -->
-            <div id="savedLocationsList"></div>
-
-            <!-- Preset Sites & Landmarks Section -->
-            <div class="presets-divider">
-                <span>Preset Sites &amp; Landmarks</span>
-            </div>
-            <div id="presetLocationsList"></div>
-        </div>
-
-        <!-- SEPARATE TOGGLEABLE DIALOG BOX FOR MISSION WEIGHTS & SLIDERS -->
-        <div id="weightsModal" class="page-overlay hidden">
-            <div class="overlay-card weights-modal-card">
-                <div class="modal-header">
-                    <h2>Mission Tuning Weights &amp; Parameters</h2>
-                    <button class="panel-close-link" onclick="toggleWeightsModal()">&times;</button>
-                </div>
-                <p class="modal-subtitle">Customize environmental constraints based on your spacecraft, rover, or instrument architecture.</p>
-                
-                <div class="mission-presets">
-                    <button type="button" class="preset-pill" onclick="applyWeightPreset('default')">Default Profile</button>
-                    <button type="button" class="preset-pill" onclick="applyWeightPreset('rover')">Rover Mobility Test</button>
-                    <button type="button" class="preset-pill" onclick="applyWeightPreset('isru')">ISRU / Ice Drilling</button>
-                </div>
-                
-                <div class="weight-sliders-container">
-                    <div class="weight-slider-group">
-                        <div class="weight-label-row">
-                            <span>C1: Mineralogy &amp; Geochemistry</span>
-                            <span id="valC1">20%</span>
-                        </div>
-                        <input type="range" id="weightC1" min="0" max="100" value="20" oninput="updateWeightsFromSliders()">
-                        <p class="weight-hint"><strong>High:</strong> Geochemical sampling, rock weathering &amp; regolith composition studies. <strong>Low:</strong> Pure mechanical/civil engineering tests.</p>
-                    </div>
-                    
-                    <div class="weight-slider-group">
-                        <div class="weight-label-row">
-                            <span>C2: Topography &amp; Slope</span>
-                            <span id="valC2">25%</span>
-                        </div>
-                        <input type="range" id="weightC2" min="0" max="100" value="25" oninput="updateWeightsFromSliders()">
-                        <p class="weight-hint"><strong>High:</strong> Rover suspension, slope traversal, boulder field &amp; crater steepness. <strong>Low:</strong> Flat-plain atmospheric landing tests.</p>
-                    </div>
-
-                    <div class="weight-slider-group">
-                        <div class="weight-label-row">
-                            <span>C3: Thermal Properties</span>
-                            <span id="valC3">20%</span>
-                        </div>
-                        <input type="range" id="weightC3" min="0" max="100" value="20" oninput="updateWeightsFromSliders()">
-                        <p class="weight-hint"><strong>High:</strong> Thermal blanket stress, diurnal temperature cycling on electronics. <strong>Low:</strong> Subsurface-only or equatorial operations.</p>
-                    </div>
-
-                    <div class="weight-slider-group">
-                        <div class="weight-label-row">
-                            <span>C4: Subsurface Resources</span>
-                            <span id="valC4">20%</span>
-                        </div>
-                        <input type="range" id="weightC4" min="0" max="100" value="20" oninput="updateWeightsFromSliders()">
-                        <p class="weight-hint"><strong>High:</strong> Ice mining, permafrost drilling, water resource extraction. <strong>Low:</strong> Dry highland surface sorties.</p>
-                    </div>
-
-                    <div class="weight-slider-group">
-                        <div class="weight-label-row">
-                            <span>C5: Eolian Dynamics</span>
-                            <span id="valC5">15%</span>
-                        </div>
-                        <input type="range" id="weightC5" min="0" max="100" value="15" oninput="updateWeightsFromSliders()">
-                        <p class="weight-hint"><strong>High:</strong> Dust accumulation on solar arrays, dune migration dynamics. <strong>Low:</strong> Rocky, wind-protected bedrock regions.</p>
-                    </div>
+            <div class="sidebar-scroll-area">
+                <div id="savedLocationsWrapper" class="hidden">
+                    <div class="presets-divider"><span>Your sites</span></div>
+                    <div id="savedLocationsList"></div>
                 </div>
 
-                <div class="modal-actions">
-                    <button class="action-btn" onclick="toggleWeightsModal()">Apply &amp; Close</button>
+                <div class="presets-divider">
+                    <span id="presetsSectionLabel">Earth analog testbeds</span>
                 </div>
+                <div id="presetLocationsList"></div>
             </div>
         </div>
 
-<!-- EARTH ANALOG MATCH RESULT SIDE PANEL -->
+        <!-- ANALOG MATCH RESULT PANEL -->
         <div id="analogResultPanel" class="hidden">
             <div class="panel-card-header">
-                <h3>Earth Analog Candidates</h3>
-                <button class="panel-close-link" onclick="document.getElementById('analogResultPanel').classList.add('hidden')">&times;</button>
+                <div class="direction-badge" id="resultDirectionBadge">Earth to Mars</div>
+                <button class="panel-close-link" onclick="closeResultPanel()" title="Hide results" aria-label="Hide results">&times;</button>
             </div>
             
-            <!-- Candidate Rank Selector Tabs (#1, #2, #3, #4, #5) -->
-            <div id="candidateTabsContainer" class="candidate-tabs-bar">
-                <!-- Populated dynamically -->
-            </div>
+            <div id="candidateTabsContainer" class="candidate-tabs-bar"></div>
 
             <div class="result-body">
                 <div id="resultPlaceName" class="result-place">Identifying region...</div>
                 <div id="resultSourceTarget" class="result-subtext"></div>
                 
                 <div class="result-metrics">
+                    <div class="metric-box highlight-box">
+                        <span class="metric-label">Match Score</span>
+                        <span class="metric-value" id="resultScore">--</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Error Radius</span>
+                        <span class="metric-value" id="resultError">--</span>
+                    </div>
                     <div class="metric-box">
                         <span class="metric-label">Latitude</span>
                         <span class="metric-value" id="resultLat">--</span>
@@ -167,23 +137,14 @@
                         <span class="metric-label">Longitude</span>
                         <span class="metric-value" id="resultLon">--</span>
                     </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Suitability (S)</span>
-                        <span class="metric-value" id="resultScore">--</span>
-                    </div>
-                    <div class="metric-box">
-                        <span class="metric-label">Error Radius</span>
-                        <span class="metric-value" id="resultError">--</span>
-                    </div>
                 </div>
 
-                <!-- Parameter Breakdown with Exact Weights & Sub-Params -->
                 <div class="param-breakdown">
-                    <div class="breakdown-title">Category Similarity &amp; Active Weights <span class="hint-text">(Click row to expand)</span></div>
+                    <div class="breakdown-title">Similarity by category <span class="hint-text">Select a row for detail</span></div>
                     
-                    <div class="param-row" onclick="this.classList.toggle('expanded')">
+                    <div class="param-row" tabindex="0" role="button" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
-                            <span>Mineralogy (C1 <small class="weight-tag" id="weightTagC1">20%</small>)</span>
+                            <span>Mineralogy <small class="weight-tag" id="weightTagC1">20%</small></span>
                             <span id="scoreC1">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC1" class="param-bar-fill"></div></div>
@@ -199,9 +160,9 @@
                         </div>
                     </div>
 
-                    <div class="param-row" onclick="this.classList.toggle('expanded')">
+                    <div class="param-row" tabindex="0" role="button" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
-                            <span>Topography (C2 <small class="weight-tag" id="weightTagC2">25%</small>)</span>
+                            <span>Topography <small class="weight-tag" id="weightTagC2">25%</small></span>
                             <span id="scoreC2">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC2" class="param-bar-fill"></div></div>
@@ -213,9 +174,9 @@
                         </div>
                     </div>
 
-                    <div class="param-row" onclick="this.classList.toggle('expanded')">
+                    <div class="param-row" tabindex="0" role="button" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
-                            <span>Thermal (C3 <small class="weight-tag" id="weightTagC3">20%</small>)</span>
+                            <span>Thermal <small class="weight-tag" id="weightTagC3">20%</small></span>
                             <span id="scoreC3">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC3" class="param-bar-fill"></div></div>
@@ -226,9 +187,9 @@
                         </div>
                     </div>
 
-                    <div class="param-row" onclick="this.classList.toggle('expanded')">
+                    <div class="param-row" tabindex="0" role="button" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
-                            <span>Subsurface (C4 <small class="weight-tag" id="weightTagC4">20%</small>)</span>
+                            <span>Subsurface <small class="weight-tag" id="weightTagC4">20%</small></span>
                             <span id="scoreC4">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC4" class="param-bar-fill"></div></div>
@@ -240,9 +201,9 @@
                         </div>
                     </div>
 
-                    <div class="param-row" onclick="this.classList.toggle('expanded')">
+                    <div class="param-row" tabindex="0" role="button" onclick="this.classList.toggle('expanded')">
                         <div class="param-info">
-                            <span>Eolian (C5 <small class="weight-tag" id="weightTagC5">15%</small>)</span>
+                            <span>Eolian <small class="weight-tag" id="weightTagC5">15%</small></span>
                             <span id="scoreC5">--</span>
                         </div>
                         <div class="param-bar-bg"><div id="barC5" class="param-bar-fill"></div></div>
@@ -254,22 +215,21 @@
                     </div>
                 </div>
 
-                <!-- Action & Comparison Buttons -->
-                <button id="recenterMatchBtn" class="action-btn full-width-btn" onclick="recenterOnLastMatch()">Re-center on Match</button>
-                <button class="action-btn full-width-btn secondary-btn" onclick="toggleComparisonModal()">View Raw Parameter Comparison</button>
-
-                <!-- Export Mission Brief Actions -->
-                <div class="export-actions">
-                    <button id="exportCsvBtn" class="export-btn" onclick="exportMissionCSV()">Export CSV (GIS)</button>
-                    <button id="exportReportBtn" class="export-btn primary-export" onclick="exportMissionBrief()">Mission Brief (PDF)</button>
+                <div class="result-actions-stack">
+                    <button id="recenterMatchBtn" class="action-btn full-width-btn" onclick="recenterOnLastMatch()">Center map on match</button>
+                    <button class="action-btn full-width-btn secondary-btn" onclick="toggleComparisonModal()">Compare all 22 parameters</button>
+                    <div class="export-actions">
+                        <button id="exportCsvBtn" class="export-btn" onclick="exportMissionCSV()">Export CSV</button>
+                        <button id="exportReportBtn" class="export-btn primary-export" onclick="exportMissionBrief()">Mission brief</button>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Planetary Info Card -->
+        <!-- Bottom-Left Planetary Info Card -->
         <div id="infoCard">
             <h2 id="bodyTitle">Earth</h2>
-            <p id="bodyDesc">Our home planet and the only known world with stable liquid water on its surface.</p>
+            <p id="bodyDesc">Our home planet and the primary baseline for terrestrial analog field testing.</p>
             <div class="stats-grid">
                 <div class="stat"><span class="stat-label">Radius</span><span class="stat-val" id="bodyRadius">6,371 km</span></div>
                 <div class="stat"><span class="stat-label">Gravity</span><span class="stat-val" id="bodyGravity">9.8 m/s²</span></div>
@@ -277,84 +237,144 @@
             </div>
         </div>
 
-        <!-- 3D Globe Container -->
+        <!-- Telemetry HUD -->
+        <div id="cursorHud" class="cursor-hud">
+            <span id="hudCoords">Hover globe for coordinates</span>
+        </div>
+
         <div id="cesiumContainer"></div>
     </main>
 
-<!-- HOW TO USE SECTION -->
-    <section id="howtoSection" class="page-overlay hidden">
-        <div class="overlay-card howto-card">
-            <h2>How to Use This Tool</h2>
-            <div class="guide-grid">
-                <div class="guide-item">
-                    <h3>1. Switch &amp; Navigate Worlds</h3>
-                    <p>Use the top menu switcher to jump between Earth, Mars, and the Moon. On Earth, hold down the middle mouse button (scroll wheel) and drag to rotate along the Z-axis, allowing you to tilt the camera into a traditional ground-level perspective. On Mars or the Moon, double-click or right-click anywhere on the 3D globe to auto-fill coordinates.</p>
+    <!-- Modals & Overlays -->
+    <div id="weightsModal" class="page-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="weightsTitle">
+        <div class="overlay-card weights-modal-card">
+            <div class="modal-header">
+                <h2 id="weightsTitle">Mission weights</h2>
+                <button class="panel-close-link" onclick="toggleWeightsModal()" aria-label="Close">&times;</button>
+            </div>
+            <p class="modal-subtitle">Choose which factors matter most for your mission. Weights are rebalanced to total 100%.</p>
+            
+            <div class="mission-presets">
+                <button type="button" class="preset-pill" onclick="applyWeightPreset('default')">Balanced</button>
+                <button type="button" class="preset-pill" onclick="applyWeightPreset('rover')">Rover mobility</button>
+                <button type="button" class="preset-pill" onclick="applyWeightPreset('isru')">ISRU and ice drilling</button>
+                <button type="button" class="preset-pill" onclick="applyWeightPreset('geology')" title="Lithology and mineralogy first, for sample-return and field geology">Geologic science</button>
+                <button type="button" class="preset-pill" onclick="applyWeightPreset('astro')" title="Mineralogy, hydration and thermal stability for habitability studies">Astrobiology</button>
+                <button type="button" class="preset-pill" onclick="applyWeightPreset('landing')" title="Slope, roughness, elevation and wind for entry, descent and landing">Landing site safety</button>
+                <button type="button" class="preset-pill" onclick="applyWeightPreset('thermal')" title="Temperature, thermal swing and illumination for power and thermal design">Thermal and power</button>
+                <button type="button" class="preset-pill" onclick="applyWeightPreset('aeolian')" title="Dust, wind and erosion for wind-driven surface processes">Aeolian processes</button>
+                <button type="button" class="preset-pill" onclick="applyWeightPreset('hardware')" title="Dust and thermal cycling for testing hardware in analog conditions">Hardware testing</button>
+            </div>
+            
+            <div class="weight-sliders-container">
+                <div class="weight-slider-group">
+                    <div class="weight-label-row">
+                        <span>C1: Mineralogy &amp; Geochemistry</span>
+                        <span id="valC1">20%</span>
+                    </div>
+                    <input type="range" id="weightC1" min="0" max="100" value="20" oninput="updateWeightsFromSliders()">
                 </div>
-                <div class="guide-item">
-                    <h3>2. Custom Locations &amp; Weights</h3>
-                    <p>When viewing Mars or the Moon, use the right sidebar panel to select from default preset locations of famous landmarks and bases, or input custom latitude, longitude, and location names (North and East are positive; South and West are negative). Click the Weights button in the panel header to adjust category importance or apply mission profiles like Rover Mobility and ISRU Drilling.</p>
+                <div class="weight-slider-group">
+                    <div class="weight-label-row">
+                        <span>C2: Topography &amp; Slope</span>
+                        <span id="valC2">25%</span>
+                    </div>
+                    <input type="range" id="weightC2" min="0" max="100" value="25" oninput="updateWeightsFromSliders()">
                 </div>
-                <div class="guide-item">
-                    <h3>3. Find, Compare &amp; Export Matches</h3>
-                    <p>Run the algorithm on your selected locations to pinpoint analog coordinates, percentage match, and error radii on Earth. Hover over or click any C1–C5 parameter bar to inspect individual sub-parameter scores, open the Raw Parameter Comparison table to verify physical measurements, or export your findings as GIS CSVs and formatted Mission Brief PDFs.</p>
+                <div class="weight-slider-group">
+                    <div class="weight-label-row">
+                        <span>C3: Thermal Properties</span>
+                        <span id="valC3">20%</span>
+                    </div>
+                    <input type="range" id="weightC3" min="0" max="100" value="20" oninput="updateWeightsFromSliders()">
+                </div>
+                <div class="weight-slider-group">
+                    <div class="weight-label-row">
+                        <span>C4: Subsurface Resources</span>
+                        <span id="valC4">20%</span>
+                    </div>
+                    <input type="range" id="weightC4" min="0" max="100" value="20" oninput="updateWeightsFromSliders()">
+                </div>
+                <div class="weight-slider-group">
+                    <div class="weight-label-row">
+                        <span>C5: Eolian Dynamics</span>
+                        <span id="valC5">15%</span>
+                    </div>
+                    <input type="range" id="weightC5" min="0" max="100" value="15" oninput="updateWeightsFromSliders()">
                 </div>
             </div>
-            <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Back to Globe</button>
-        </div>
-    </section>
 
-    <!-- ABOUT SECTION -->
-    <section id="aboutSection" class="page-overlay hidden">
-        <div class="overlay-card about-card">
-            <h2>About Celestial Parallels</h2>
-            <div class="about-text">
-                <p>We developed a scientifically rigorous Earth analog site selection interactive map integrated with 3D CesiumJS/ion. Our model addresses the lack of an efficient, rigorous method to identify terrestrial analogs of lunar and Martian surfaces.</p>
-                <p>It utilizes widespread open-source planetary data and enforces an area-weighted subaerial land mask to exclude marine environments. This approach achieves sub-10 km spatial precision while filtering out water, urban, and high-vegetation anomalies.</p>
-                <p>Once a user selects or inputs a target location, the algorithm identifies the closest Earth analog across five weighted parameter groups—Mineralogy (C1), Topography (C2), Thermal Properties (C3), Subsurface Resources (C4), and Eolian Dynamics (C5)—enabling rapid analog site selection, rover transport optimization, and improved biological crew readiness for extraterrestrial conditions.</p>
-                <p class="doi-citation">
-                    <strong>Publication:</strong> <a href="https://doi.org/10.5281/zenodo.24301430" target="_blank" rel="noopener noreferrer">https://doi.org/10.5281/zenodo.24301430</a>
-                </p>
-            </div>
-            <div class="about-actions">
-                <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Explore Now</button>
-                <a href="https://doi.org/10.5281/zenodo.24301430" target="_blank" rel="noopener noreferrer" class="paper-link-btn">View Research Paper (Zenodo)</a>
+            <div class="modal-actions">
+                <button class="action-btn" onclick="toggleWeightsModal()">Apply weights</button>
             </div>
         </div>
-    </section>
-
-    <!-- Loading Overlay with Big Rounded Logo -->
-    <div id="loadingOverlay">
-        <img src="logo.png" alt="Explorer Logo" class="loading-logo">
-        <div class="spinner"></div>
-        <span id="loadingText">Initializing Explorer...</span>
     </div>
 
-    <script src="app.js"></script>
+    <section id="howtoSection" class="page-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+        <div class="overlay-card howto-card">
+            <h2 id="howtoTitle">How to use Celestial Parallels</h2>
+            <div class="guide-grid">
+                <div class="guide-item">
+                    <h3>Start from Earth</h3>
+                    <p>Start on <strong>Earth</strong> to pick testbeds or search any location via the top search bar. Then choose Mars match or Moon match to find similar environments.</p>
+                </div>
+                <div class="guide-item">
+                    <h3>Start from Mars or the Moon</h3>
+                    <p>Switch to Mars or Moon, select a landing zone, and find the closest field site on Earth.</p>
+                </div>
+            </div>
+            <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Back to explorer</button>
+        </div>
+    </section>
 
-    <!-- Side-by-Side Comparison Modal -->
-    <div id="comparisonModal" class="page-overlay hidden">
+    <section id="aboutSection" class="page-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+        <div class="overlay-card about-card">
+            <h2 id="aboutTitle">About Celestial Parallels</h2>
+            <div class="about-text">
+                <p>An interactive tool for finding geological analog sites between Earth, Mars and the Moon, built on CesiumJS and multi-source planetary datasets.</p>
+                <p class="doi-citation"><strong>Publication DOI</strong>: <a href="https://doi.org/10.5281/zenodo.24301430" target="_blank">10.5281/zenodo.24301430</a></p>
+            </div>
+            <div class="about-actions">
+                <button class="action-btn" onclick="showSection('home', document.querySelector('.nav-btn'))">Open explorer</button>
+            </div>
+        </div>
+    </section>
+
+    <div id="loadingOverlay">
+        <img src="logo.png" alt="Logo" class="loading-logo">
+        <div class="spinner"></div>
+        <span id="loadingText">Loading explorer</span>
+    </div>
+
+    <div id="comparisonModal" class="page-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="comparisonTitle">
         <div class="overlay-card comparison-card">
-            <h2>Target vs. Earth Physical Comparison</h2>
-            <p id="comparisonSubtitle" class="result-subtext">Side-by-side physical measurements and property breakdown.</p>
+            <div class="modal-header">
+                <h2 id="comparisonTitle">22-parameter comparison</h2>
+                <button class="panel-close-link" onclick="toggleComparisonModal()" aria-label="Close">&times;</button>
+            </div>
+            <p id="comparisonSubtitle" class="result-subtext">Side-by-side physical measurements.</p>
             <div class="table-scroll-container">
                 <table id="comparisonTable">
                     <thead>
                         <tr>
                             <th>Category</th>
                             <th>Parameter</th>
-                            <th id="targetColHeader">Target Value</th>
-                            <th>Earth Analog Value</th>
+                            <th id="sourceColHeader">Source Value</th>
+                            <th id="destColHeader">Matched Value</th>
                             <th>Match %</th>
                         </tr>
                     </thead>
-                    <tbody id="comparisonTableBody">
-                        <!-- Populated dynamically -->
-                    </tbody>
+                    <tbody id="comparisonTableBody"></tbody>
                 </table>
             </div>
-            <button class="action-btn" onclick="toggleComparisonModal()">Close Comparison</button>
+            <div class="modal-actions">
+                <button class="action-btn" onclick="toggleComparisonModal()">Close</button>
+            </div>
         </div>
     </div>
 
+    <div id="toastRegion" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
 </body>
 </html>
